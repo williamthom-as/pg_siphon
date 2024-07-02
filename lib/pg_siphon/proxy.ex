@@ -1,6 +1,8 @@
 require Logger
 
-defmodule PgProxy do
+defmodule Proxy do
+
+  import PgSiphon.Parser, only: [parse: 1]
 
   def start(from, to_host, to_port) do
     {:ok, ln_socket} = :gen_tcp.listen(from, [
@@ -30,6 +32,8 @@ defmodule PgProxy do
     case :gen_tcp.recv(from_socket, 0) do
       {:ok, data} ->
         Logger.debug("Data recv:\n #{inspect(data, bin: :as_binary)}")
+        Logger.debug(data)
+        Logger.debug(parse(data))
 
         :gen_tcp.send(to_socket, data)
         loop_forward(from_socket, to_socket, :client)
