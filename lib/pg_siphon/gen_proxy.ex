@@ -1,19 +1,47 @@
 require Logger
 
-defmodule PgSiphon.Proxy do
+defmodule PgSiphon.GenProxy do
+  use GenServer
 
-  import PgSiphon.Parser, only: [parse: 1]
+  @name :proxy_server
 
-  def start(from_port, to_host, to_port) do
-    {:ok, l_sock} = :gen_tcp.listen(from_port, [
+  defmodule ProxyState do
+    defstruct accept_pid: nil, from_port: 5000, to_host: 'localhost', to_port: 5432
+  end
+
+  def init(%ProxyState{} = state) do
+    {:ok, state}
+  end
+
+  def handle_call(:listen, _from, state) do
+    {:ok, l_sock} = :gen_tcp.listen(state.from_port, [
       :binary,
       packet: :raw,
       active: false
     ])
 
-    Logger.info "Listening for connections on port #{from_port}"
+    Logger.info "Listening for connections on port #{state.from_port}"
 
-    loop_accept(l_sock, to_host, to_port)
+    accept_pid = spawn_link(fn -> loop_accept(l_sock, state.to_host, state.to_port) end)
+
+    {:reply, :ok, %{state | accept_pid: accept_pid}}
+  end
+
+  def start_link(%ProxyState{} = state) do
+    result = GenServer.start_link(__MODULE__, state, name: @name)
+
+    case result do
+      {:ok, s_pid} ->
+        start_listen(s_pid)
+      {:error, {:already_started, old_pid}} ->
+        {:ok, old_pid}
+      error ->
+        Logger.error(inspect error)
+    end
+  end
+
+  defp start_listen(server_pid) do
+    GenServer.call(server_pid, :listen)
   end
 
   defp loop_accept(l_sock, to_host, to_port) do
@@ -42,10 +70,6 @@ defmodule PgSiphon.Proxy do
     # recv all available bytes - 0
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        # Logger.debug("Data recv:\n #{inspect(data, bin: :as_binary)}")
-        # Logger.debug(data)
-        Logger.debug(parse(data))
-
         :gen_tcp.send(t_sock, data)
         loop_forward(f_sock, t_sock, :client)
       {:error, _} ->
