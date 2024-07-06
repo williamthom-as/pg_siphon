@@ -9,23 +9,7 @@ defmodule PgSiphon.GenProxy do
     defstruct accept_pid: nil, from_port: 5000, to_host: 'localhost', to_port: 5432
   end
 
-  def init(%ProxyState{} = state) do
-    {:ok, state}
-  end
-
-  def handle_call(:listen, _from, state) do
-    {:ok, l_sock} = :gen_tcp.listen(state.from_port, [
-      :binary,
-      packet: :raw,
-      active: false
-    ])
-
-    Logger.info "Listening for connections on port #{state.from_port}"
-
-    accept_pid = spawn_link(fn -> loop_accept(l_sock, state.to_host, state.to_port) end)
-
-    {:reply, :ok, %{state | accept_pid: accept_pid}}
-  end
+  # Client interface
 
   def start_link(%ProxyState{} = state) do
     result = GenServer.start_link(__MODULE__, state, name: @name)
@@ -45,13 +29,9 @@ defmodule PgSiphon.GenProxy do
   end
 
   defp loop_accept(l_sock, to_host, to_port) do
-
     Logger.debug "Waiting to accept connection..."
 
     {:ok, f_sock} = :gen_tcp.accept(l_sock)
-
-    Logger.debug "#{to_host}:#{to_port}"
-
     {:ok, t_sock} = :gen_tcp.connect(to_host, to_port, [
       :binary,
       packet: :raw,
@@ -87,5 +67,31 @@ defmodule PgSiphon.GenProxy do
         :gen_tcp.close(f_sock)
         :gen_tcp.close(t_sock)
     end
+  end
+
+  # GenServer callbacks
+
+  def init(%ProxyState{} = state) do
+    {:ok, state}
+  end
+
+  def handle_call(:listen, _from, state) do
+    {:ok, l_sock} = :gen_tcp.listen(state.from_port, [
+      :binary,
+      packet: :raw,
+      active: false
+    ])
+
+    Logger.info "Listening for connections on port #{state.from_port}"
+
+    accept_pid = spawn_link(fn -> loop_accept(l_sock, state.to_host, state.to_port) end)
+
+    {:reply, :ok, %{state | accept_pid: accept_pid}}
+  end
+
+  # Rely on supervisor to reboot
+  def handle_info({:EXIT, _pid, reason}, %ProxyState{} = state) do
+    IO.puts("Process exited with reason: #{inspect reason}")
+    {:stop, {:exit, reason}, state}
   end
 end
