@@ -3,10 +3,10 @@ defmodule PgSiphon do
   Documentation for `PgSiphon`.
   """
 
-  import Proxy
+  # import Proxy
 
   def start_proxy() do
-    start(5000, 'localhost', 5432)
+    # start(5000, 'localhost', 5432)
   end
 
 end
