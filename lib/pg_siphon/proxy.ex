@@ -42,8 +42,8 @@ defmodule PgSiphon.Proxy do
     # recv all available bytes - 0
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        # Logger.debug("Data recv:\n #{inspect(data, bin: :as_binary)}")
-        # Logger.debug(data)
+        Logger.debug("Data recv:\n #{inspect(data, bin: :as_binary)}")
+        Logger.debug(data)
         Logger.debug(parse(data))
 
         :gen_tcp.send(t_sock, data)
