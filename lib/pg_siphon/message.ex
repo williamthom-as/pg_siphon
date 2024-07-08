@@ -25,7 +25,7 @@ defmodule PgSiphon.Message do
 
   def decode(<<>>), do: []
 
-  def decode(<<0, 0, 0, length::binary-size(1), rest::binary>>) when byte_size(rest) >= 4 do
+  def decode(<<0, 0, 0, length::binary-size(1), rest::binary>>) do
     length = :binary.decode_unsigned(length, :big) - 4
     <<message::binary-size(length), rest::binary>> = rest
 
@@ -41,9 +41,9 @@ defmodule PgSiphon.Message do
 
   def decode(<<67, 0, 0, 0, length::binary-size(1), rest::binary>>) do
     length = :binary.decode_unsigned(length, :big) - 4
-    <<message::binary-size(length), rest::binary>> = rest
+    <<desc_type::binary-size(1), message::binary-size(length - 1), rest::binary>> = rest
 
-    [{"C", message} | decode(rest)]
+    [{"C", desc_type, message} | decode(rest)]
   end
 
   def decode(<<68, 0, 0, 0, length::binary-size(1), rest::binary>>) do
@@ -69,7 +69,7 @@ defmodule PgSiphon.Message do
     [{"H", message} | decode(rest)]
   end
 
-  def decode(<<80, 0, 0, 0, length::binary-size(1), rest::binary>>) when byte_size(rest) >= 4 do
+  def decode(<<80, 0, 0, 0, length::binary-size(1), rest::binary>>) do
     length = :binary.decode_unsigned(length, :big) - 4
     <<message::binary-size(length), rest::binary>> = rest
 
