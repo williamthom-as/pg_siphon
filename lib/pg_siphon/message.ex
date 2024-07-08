@@ -82,8 +82,12 @@ defmodule PgSiphon.Message do
     [{"S", ""} | decode(rest)]
   end
 
-  def decode(unknown) do
-    Logger.error "Unknown message parsed - #{unknown}"
+  def decode(unknown) when byte_size(unknown) >= 4 do
+    Logger.debug("Unknown message cannot be parsed [#{unknown}]")
+    []
+  end
+
+  def decode(_) do
     []
   end
 
