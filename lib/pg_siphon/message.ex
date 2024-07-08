@@ -1,3 +1,5 @@
+require Logger
+
 defmodule PgSiphon.Message do
 
   defstruct [:type, :length, :payload]
@@ -80,7 +82,8 @@ defmodule PgSiphon.Message do
     [{"S", ""} | decode(rest)]
   end
 
-  def decode(_) do
+  def decode(unknown) do
+    Logger.error "Unknown message parsed - #{unknown}"
     []
   end
 
