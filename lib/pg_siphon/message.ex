@@ -2,6 +2,9 @@ defmodule PgSiphon.Message do
 
   defstruct [:type, :length, :payload]
 
+  # Postgres instructions
+  # https://www.postgresql.org/docs/current/protocol-message-formats.html
+
   @fe_msg_id %{
     "p" => "Authentication message",
     "Q" => "Simple query",
@@ -45,9 +48,11 @@ defmodule PgSiphon.Message do
 
   def decode(<<68, 0, 0, 0, length::binary-size(1), rest::binary>>) do
     length = :binary.decode_unsigned(length, :big) - 4
-    <<message::binary-size(length), rest::binary>> = rest
 
-    [{"D", message} | decode(rest)]
+    # desc_type -> 'S' to describe a prepared statement; or 'P' to describe a portal.
+    <<desc_type::binary-size(1), message::binary-size(length - 1), rest::binary>> = rest
+
+    [{"D", desc_type, message} | decode(rest)]
   end
 
   def decode(<<69, 0, 0, 0, length::binary-size(1), rest::binary>>) do

@@ -58,7 +58,7 @@ defmodule PgSiphon.GenProxy do
       {:ok, data} ->
         Logger.debug("Data recv:\n #{inspect(data, bin: :as_binary)}")
         Logger.debug(data)
-        Logger.debug(PgSiphon.Message.decode_messages(data))
+        Logger.debug(PgSiphon.Message.decode(data))
 
         :gen_tcp.send(t_sock, data)
         loop_forward(f_sock, t_sock, :client)
