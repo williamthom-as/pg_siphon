@@ -20,39 +20,62 @@ defmodule PgSiphon.Message do
     "0" => nil
   }
 
-  def decode_messages(<<>>), do: []
+  def decode(<<>>), do: []
 
-  def decode_messages(<<80, length::binary-size(4), rest::binary>>) when byte_size(rest) >= 4 do
+  def decode(<<0, 0, 0, length::binary-size(1), rest::binary>>) when byte_size(rest) >= 4 do
     length = :binary.decode_unsigned(length, :big) - 4
     <<message::binary-size(length), rest::binary>> = rest
-    [{"P", message} | decode_messages(rest)]
+
+    [{"0", message} | decode(rest)]
   end
 
-  def decode_messages(<<68, _::binary-size(4), rest::binary>>) do
-    length = 0
+  def decode(<<66, 0, 0, 0, length::binary-size(1), rest::binary>>) do
+    length = :binary.decode_unsigned(length, :big) - 4
     <<message::binary-size(length), rest::binary>> = rest
 
-    [{"D", message} | decode_messages(rest)]
+    [{"B", message} | decode(rest)]
   end
 
-  def decode_messages(<<72, _::binary-size(4), rest::binary>>) do
-    length = 0
+  def decode(<<67, 0, 0, 0, length::binary-size(1), rest::binary>>) do
+    length = :binary.decode_unsigned(length, :big) - 4
     <<message::binary-size(length), rest::binary>> = rest
 
-    [{"H", message} | decode_messages(rest)]
+    [{"C", message} | decode(rest)]
   end
 
-  def decode_messages(<<83, 0, rest::binary>>) do
-    [{"S", ""} | decode_messages(rest)]
+  def decode(<<68, 0, 0, 0, length::binary-size(1), rest::binary>>) do
+    length = :binary.decode_unsigned(length, :big) - 4
+    <<message::binary-size(length), rest::binary>> = rest
+
+    [{"D", message} | decode(rest)]
   end
 
-  def decode_messages(<<_type::binary-size(1), length::binary-size(4), rest::binary>>) when byte_size(rest) >= 4 do
-    length = :binary.decode_unsigned(length, :big)
-    <<_::binary-size(length), rest::binary>> = rest
-    decode_messages(rest)
+  def decode(<<69, 0, 0, 0, length::binary-size(1), rest::binary>>) do
+    length = :binary.decode_unsigned(length, :big) - 4
+    <<message::binary-size(length), rest::binary>> = rest
+
+    [{"E", message} | decode(rest)]
   end
 
-  def decode_messages(_) do
+  def decode(<<72, 0, 0, 0, length::binary-size(1), rest::binary>>) do
+    length = :binary.decode_unsigned(length, :big) - 4
+    <<message::binary-size(length), rest::binary>> = rest
+
+    [{"H", message} | decode(rest)]
+  end
+
+  def decode(<<80, 0, 0, 0, length::binary-size(1), rest::binary>>) when byte_size(rest) >= 4 do
+    length = :binary.decode_unsigned(length, :big) - 4
+    <<message::binary-size(length), rest::binary>> = rest
+
+    [{"P", message} | decode(rest)]
+  end
+
+  def decode(<<83, 0, rest::binary>>) do
+    [{"S", ""} | decode(rest)]
+  end
+
+  def decode(_) do
     []
   end
 
