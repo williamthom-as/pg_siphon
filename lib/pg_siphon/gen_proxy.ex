@@ -5,6 +5,8 @@ defmodule PgSiphon.GenProxy do
 
   @name :proxy_server
 
+  import PgSiphon.Message, only: [decode: 1]
+
   defmodule ProxyState do
     defstruct accept_pid: nil, from_port: 5000, to_host: 'localhost', to_port: 5432
   end
@@ -22,6 +24,10 @@ defmodule PgSiphon.GenProxy do
       error ->
         Logger.error(inspect error)
     end
+  end
+
+  def stop do
+    GenServer.stop(@name)
   end
 
   defp start_listen(server_pid) do
@@ -50,6 +56,9 @@ defmodule PgSiphon.GenProxy do
     # recv all available bytes - 0
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
+        Logger.debug("Data recv:\n #{inspect(data, bin: :as_binary)}")
+        Logger.debug(decode(data))
+
         :gen_tcp.send(t_sock, data)
         loop_forward(f_sock, t_sock, :client)
       {:error, _} ->

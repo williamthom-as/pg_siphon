@@ -65,3 +65,5 @@ erl_crash.dump
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/elixir,visualstudiocode
+
+/sandpit
