@@ -32,4 +32,9 @@ defmodule PgSiphon.MessageTest do
          0, 0>>}
     ] = PgSiphon.Message.decode(message_frame)
   end
+
+  test "parse/1 with sync message" do
+    message_frame = <<83, 0, 0, 0, 4>>
+    assert [{"S", ""}] = PgSiphon.Message.decode(message_frame)
+  end
 end

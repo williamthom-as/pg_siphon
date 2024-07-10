@@ -78,8 +78,11 @@ defmodule PgSiphon.Message do
     [{"P", message} | decode(rest)]
   end
 
-  def decode(<<83, 0, rest::binary>>) do
-    [{"S", ""} | decode(rest)]
+  def decode(<<83, 0, 0, 0, length::binary-size(1), rest::binary>>) do
+    length = :binary.decode_unsigned(length, :big) - 4
+    <<message::binary-size(length), rest::binary>> = rest
+
+    [{"S", message} | decode(rest)]
   end
 
   def decode(unknown) when byte_size(unknown) >= 4 do

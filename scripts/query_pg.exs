@@ -15,3 +15,6 @@ Mix.install([:postgrex])
 Enum.each(result.rows, fn [table_name] ->
   IO.puts(table_name)
 end)
+
+# Insert name into names table
+{:ok, _} = Postgrex.query(pid, "INSERT INTO names (first_name) VALUES ($1);", ["Johnny"])
