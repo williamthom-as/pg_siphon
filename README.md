@@ -2,7 +2,7 @@
 
 🚧 Under development, not fully functional yet 🚧
 
-PgSiphon is a simple proxy utility that sits between your application and your Postgres server to provide activity metrics on all queries executed. 
+PgSiphon is an (experimental) simple proxy utility that sits between your application and your Postgres server to provide activity metrics on all queries executed. 
 
 This is useful for debugging, performance tuning, or auditing purposes, and should only be used in development modes.
 
@@ -21,20 +21,7 @@ Unless otherwise changed, the proxy server will listen on `localhost:5000` and f
 To start the proxy server, run:
 
 ```bash
-mix run -e 'PgSiphon.start_proxy()'
-```
-
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `pg_siphon` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:pg_siphon, "~> 0.1.0"}
-  ]
-end
+mix run -e 'PgSiphon.ServicesSupervisor.start_link()'
 ```
 
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)

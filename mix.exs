@@ -14,6 +14,7 @@ defmodule PgSiphon.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      mod: {PgSiphon, []},
       extra_applications: [:logger, :postgrex]
     ]
   end
@@ -21,7 +22,8 @@ defmodule PgSiphon.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:postgrex, ">= 0.18.0"}
+      {:postgrex, ">= 0.18.0"},
+      {:ratatouille, "~> 0.5.0"}
     ]
   end
 end
