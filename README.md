@@ -16,7 +16,7 @@ By sitting between the two servers, we can get a very accurate indiction of what
 
 You will need to configure your application to use the proxy server.
 
-Unless otherwise changed, the proxy server will listen on `localhost:5000` and forward all queries to `localhost:5432`.
+Unless otherwise changed, the proxy server will listen on `localhost:1337` and forward all queries to `localhost:5432`.
 
 To start the proxy server, run:
 

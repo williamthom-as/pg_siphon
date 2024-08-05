@@ -7,7 +7,7 @@ Mix.install([:postgrex])
   username: "postgres",
   password: "postgres",
   database: "test_db",
-  port: 5000
+  port: 1337
 )
 
 {:ok, result} = Postgrex.query(pid, "SELECT * FROM names;", [])

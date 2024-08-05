@@ -10,7 +10,7 @@ defmodule PgSiphon.ProxyServer do
   alias PgSiphon.QueryServer
 
   defmodule ProxyState do
-    defstruct accept_pid: nil, from_port: 5000, to_host: 'localhost', to_port: 5432
+    defstruct accept_pid: nil, from_port: 1337, to_host: 'localhost', to_port: 5432
   end
 
   # Client interface
@@ -89,7 +89,7 @@ defmodule PgSiphon.ProxyServer do
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
         # Logger.debug("Data recv:\n #{inspect(data, bin: :as_binary)}")
-        Logger.debug(decode(data))
+        Logger.debug(data)
 
         QueryServer.add_message(data)
 
