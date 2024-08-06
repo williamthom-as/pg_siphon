@@ -71,11 +71,27 @@ defmodule PgSiphon.Message do
     [{"H", message} | decode(rest)]
   end
 
-  def decode(<<80, 0, 0, 0, length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
+  def decode(<<80, 0, 0, msg_type::binary-size(1), length::binary-size(1), rest::binary>>) do
+    Logger.debug("Length:\n #{inspect(length, bin: :as_binary)}")
+
+    length = if msg_type == 0 do
+      :binary.decode_unsigned(length, :big) - 4
+    else
+      :binary.decode_unsigned(length, :big)
+    end
+
+    Logger.debug("Length (a): #{length}")
+
     <<message::binary-size(length), rest::binary>> = rest
 
     [{"P", message} | decode(rest)]
+  end
+
+  def decode(<<81, 0, 0, _::binary-size(1), length::binary-size(1), rest::binary>>) do
+    length = :binary.decode_unsigned(length, :big) - 4
+    <<message::binary-size(length), rest::binary>> = rest
+
+    [{"Q", message} | decode(rest)]
   end
 
   def decode(<<83, 0, 0, 0, length::binary-size(1), rest::binary>>) do
