@@ -27,78 +27,67 @@ defmodule PgSiphon.Message do
 
   def decode(<<>>), do: []
 
-  def decode(<<0, 0, 0, length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
-    <<message::binary-size(length), rest::binary>> = rest
+  def decode(<<0, 0, 0, length::integer-size(8), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
 
     [{"0", message} | decode(rest)]
   end
 
-  def decode(<<66, 0, 0, 0, length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
-    <<message::binary-size(length), rest::binary>> = rest
+  def decode(<<66, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
 
     [{"B", message} | decode(rest)]
   end
 
-  def decode(<<67, 0, 0, 0, length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
+  def decode(<<67, length::integer-size(32), rest::binary>>) do
+    length = length - 4
     <<desc_type::binary-size(1), message::binary-size(length - 1), rest::binary>> = rest
 
     [{"C", desc_type, message} | decode(rest)]
   end
 
-  def decode(<<68, 0, 0, 0, length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
-
+  def decode(<<68, length::integer-size(32), rest::binary>>) do
+    length = length - 4
     # desc_type -> 'S' to describe a prepared statement; or 'P' to describe a portal.
     <<desc_type::binary-size(1), message::binary-size(length - 1), rest::binary>> = rest
 
     [{"D", desc_type, message} | decode(rest)]
   end
 
-  def decode(<<69, 0, 0, 0, length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
-    <<message::binary-size(length), rest::binary>> = rest
+  def decode(<<69, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
 
     [{"E", message} | decode(rest)]
   end
 
-  def decode(<<72, 0, 0, 0, length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
-    <<message::binary-size(length), rest::binary>> = rest
+  def decode(<<72, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
 
     [{"H", message} | decode(rest)]
   end
 
-  def decode(<<80, 0, 0, msg_type::binary-size(1), length::binary-size(1), rest::binary>>) do
-    Logger.debug("Length:\n #{inspect(length, bin: :as_binary)}")
-
-    length = if msg_type == 0 do
-      :binary.decode_unsigned(length, :big) - 4
-    else
-      :binary.decode_unsigned(length, :big)
-    end
-
-    Logger.debug("Length (a): #{length}")
-
-    <<message::binary-size(length), rest::binary>> = rest
+  def decode(<<80, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
 
     [{"P", message} | decode(rest)]
   end
 
-  def decode(<<81, 0, 0, _::binary-size(1), length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
-    <<message::binary-size(length), rest::binary>> = rest
+  def decode(<<81, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
 
     [{"Q", message} | decode(rest)]
   end
 
-  def decode(<<83, 0, 0, 0, length::binary-size(1), rest::binary>>) do
-    length = :binary.decode_unsigned(length, :big) - 4
-    <<message::binary-size(length), rest::binary>> = rest
+  def decode(<<83, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
 
     [{"S", message} | decode(rest)]
+  end
+
+  def decode(<<112, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
+
+    [{"p", message} | decode(rest)]
   end
 
   def decode(unknown) when byte_size(unknown) >= 4 do
