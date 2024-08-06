@@ -3,6 +3,8 @@ require Logger
 defmodule PgSiphon.QueryServer do
   use GenServer
 
+  import PgSiphon.Message, only: [decode: 1]
+
   @name :query_server
 
   defmodule State do
@@ -56,7 +58,6 @@ defmodule PgSiphon.QueryServer do
   end
 
   def handle_call({:add_message, message}, _from, state) do
-    # TODO: check by filter types, and if "recording" mode is on.
     {:ok, new_state} = perform_message_insert(message, state)
 
     {:reply, :ok, new_state}
@@ -68,11 +69,11 @@ defmodule PgSiphon.QueryServer do
 
   # Implementation
 
-  defp perform_message_insert(
-    message,
-    %State{messages: messages, recording: true} = state
-  ) do
-    {:ok, %State{state | messages: messages ++ [message]}}
+  defp perform_message_insert(message, %State{messages: messages, recording: true} = state) do
+    decoded_message = message
+    |> decode()
+
+    {:ok, %State{state | messages: messages ++ [decoded_message]}}
   end
 
   defp perform_message_insert(_, state) do

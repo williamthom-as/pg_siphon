@@ -14,5 +14,6 @@ defmodule PgSiphon do
 
   def stop(_) do
     System.halt(0)
+    :ok
   end
 end

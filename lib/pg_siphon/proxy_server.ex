@@ -5,8 +5,6 @@ defmodule PgSiphon.ProxyServer do
 
   @name :proxy_server
 
-  import PgSiphon.Message, only: [decode: 1]
-
   alias PgSiphon.QueryServer
 
   defmodule ProxyState do
@@ -88,9 +86,9 @@ defmodule PgSiphon.ProxyServer do
     # recv all available bytes - 0
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        Logger.debug("Data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
-        Logger.debug(decode(data))
-        Logger.debug("--------")
+        # Logger.debug("Data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+        # Logger.debug(decode(data))
+        # Logger.debug("--------")
         # Logger.debug(data)
 
         spawn(fn -> QueryServer.add_message(data) end)
