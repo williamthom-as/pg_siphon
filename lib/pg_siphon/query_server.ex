@@ -3,6 +3,8 @@ require Logger
 defmodule PgSiphon.QueryServer do
   use GenServer
 
+  alias PgSiphon.Message
+
   import PgSiphon.Message, only: [decode: 1]
 
   @name :query_server
@@ -81,10 +83,17 @@ defmodule PgSiphon.QueryServer do
   # Implementation
 
   defp perform_message_insert(message, %State{table: table, recording: true} = state) do
-    decoded_message = message
+    decoded_messages = message
     |> decode()
 
-    :ets.insert(table, decoded_message)
+    Enum.each(decoded_messages, fn %Message{payload: payload, type: type, length: length} ->
+      case :ets.lookup(table, payload) do
+        [] ->
+          :ets.insert(state.table, {payload, type, length, 1})
+        [{payload, type, length, count}] ->
+          :ets.insert(state.table, {payload, type, length, count + 1})
+      end
+    end)
 
     {:ok, state}
   end
