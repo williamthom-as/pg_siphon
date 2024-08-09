@@ -87,9 +87,17 @@ defmodule PgSiphon.ProxyServer do
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
         # Logger.debug("Data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
-        # Logger.debug(decode(data))
-        # Logger.debug("--------")
-        # Logger.debug(data)
+
+        spawn(fn ->
+          PgSiphon.Message.decode(data)
+          |> Enum.each(fn %PgSiphon.Message{payload: payload, type: type, length: _length} ->
+              payload
+              |> :binary.bin_to_list()
+              |> List.to_string()
+              |> (&("Type: " <> type <> " Message: " <> &1)).()
+              |> Logger.debug()
+          end)
+        end)
 
         spawn(fn -> QueryServer.add_message(data) end)
 
