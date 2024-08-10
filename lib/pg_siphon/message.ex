@@ -87,6 +87,12 @@ defmodule PgSiphon.Message do
     [%PgSiphon.Message{payload: message, type: "S", length: length} | decode(rest)]
   end
 
+  def decode(<<88, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
+
+    [%PgSiphon.Message{payload: message, type: "X", length: length} | decode(rest)]
+  end
+
   def decode(<<112, length::integer-size(32), rest::binary>>) do
     <<message::binary-size(length - 4), rest::binary>> = rest
 
@@ -106,4 +112,6 @@ defmodule PgSiphon.Message do
   end
 
   def valid_type?(type), do: Map.has_key?(@fe_msg_id, type)
+
+  def get_fe_message_types, do: @fe_msg_id
 end
