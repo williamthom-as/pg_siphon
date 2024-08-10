@@ -3,12 +3,10 @@ require Logger
 defmodule PgSiphon.MonitoringServer do
   use GenServer
 
-  alias PgSiphon.QueryServer
-
   @name :monitoring_server
 
   defmodule State do
-    defstruct recording: false, filter_message_types: [], count: 0
+    defstruct recording: true, filter_message_types: [], count: 0
   end
 
   def start_link(_args) do
@@ -76,18 +74,24 @@ defmodule PgSiphon.MonitoringServer do
     {:noreply, state}
   end
 
-  defp perform_log_message(message, %State{recording: true, filter_message_types: filter_message_types}) do
-    message
-    |> PgSiphon.Message.decode() # No need to do this twice.
-    |> Enum.each(fn %PgSiphon.Message{payload: payload, type: type, length: _length} ->
-      if Enum.member?(filter_message_types, type) do
-        payload
-        |> :binary.bin_to_list()
-        |> List.to_string()
-        |> (&("Type: " <> type <> " Message: " <> &1)).()
-        |> Logger.debug()
-      end
+  @spec perform_log_message([PgSiphon.Message.t()], State.t()) :: :ok
+  defp perform_log_message(message_frame, %State{recording: true, filter_message_types: []}) do
+    PgSiphon.Message.log_message(message_frame)
+
+    :ok
+  end
+
+  defp perform_log_message(message_frame, %State{recording: true, filter_message_types: filter_message_types}) do
+    PgSiphon.Message.log_message(message_frame)
+
+    candidate_messages = message_frame
+    |> Enum.filter(fn %PgSiphon.Message{type: type} ->
+      !Enum.member?(filter_message_types, type)
     end)
+
+    PgSiphon.Message.log_message(candidate_messages)
+
+    :ok
   end
 
   defp perform_log_message(_message, _state), do: :ok

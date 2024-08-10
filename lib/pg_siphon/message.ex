@@ -114,4 +114,18 @@ defmodule PgSiphon.Message do
   def valid_type?(type), do: Map.has_key?(@fe_msg_id, type)
 
   def get_fe_message_types, do: @fe_msg_id
+
+  def log_message(message_frame) do
+    message_frame
+    |> Enum.each(fn %PgSiphon.Message{payload: payload, type: type, length: _length} ->
+      # Logger.debug(inspect(payload, bin: :as_binaries, limit: :infinity))
+
+      payload
+      |> :binary.bin_to_list()
+      |> Enum.filter(&(&1 != 0)) # Strip out null bytes
+      |> List.to_string()
+      |> (&("Type: " <> type <> " Message: " <> &1)).()
+      |> Logger.debug()
+    end)
+  end
 end

@@ -86,6 +86,8 @@ defmodule PgSiphon.QueryServer do
     decoded_messages = message
     |> decode()
 
+    PgSiphon.MonitoringServer.log_message(decoded_messages)
+
     Enum.each(decoded_messages, fn %Message{payload: payload, type: type, length: length} ->
       case :ets.lookup(table, payload) do
         [] ->
