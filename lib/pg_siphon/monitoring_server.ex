@@ -5,6 +5,8 @@ defmodule PgSiphon.MonitoringServer do
 
   @name :monitoring_server
 
+  import PgSiphon.Message, only: [decode: 1, log_message_frame: 1]
+
   defmodule State do
     defstruct recording: true, filter_message_types: [], count: 0
   end
@@ -29,6 +31,10 @@ defmodule PgSiphon.MonitoringServer do
 
   def clear_filter_types() do
     GenServer.cast(@name, :clear_filter_types)
+  end
+
+  def show_filter_types() do
+    GenServer.cast(@name, :show_filter_types)
   end
 
   def log_message(message) do
@@ -68,28 +74,34 @@ defmodule PgSiphon.MonitoringServer do
   end
 
   @impl true
+  def handle_cast(:show_filter_types, state) do
+    Logger.info("Filtering on FE message types: #{inspect(state.filter_message_types)}")
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_cast({:log_message, message}, state) do
     perform_log_message(message, state)
 
     {:noreply, state}
   end
 
-  @spec perform_log_message([PgSiphon.Message.t()], State.t()) :: :ok
   defp perform_log_message(message_frame, %State{recording: true, filter_message_types: []}) do
-    PgSiphon.Message.log_message(message_frame)
+    message_frame
+    |> decode()
+    |> log_message_frame()
 
     :ok
   end
 
   defp perform_log_message(message_frame, %State{recording: true, filter_message_types: filter_message_types}) do
-    PgSiphon.Message.log_message(message_frame)
-
-    candidate_messages = message_frame
+    message_frame
+    |> decode()
     |> Enum.filter(fn %PgSiphon.Message{type: type} ->
-      !Enum.member?(filter_message_types, type)
+      Enum.member?(filter_message_types, type)
     end)
-
-    PgSiphon.Message.log_message(candidate_messages)
+    |> log_message_frame()
 
     :ok
   end

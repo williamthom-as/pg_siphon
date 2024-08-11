@@ -115,7 +115,7 @@ defmodule PgSiphon.Message do
 
   def get_fe_message_types, do: @fe_msg_id
 
-  def log_message(message_frame) do
+  def log_message_frame(message_frame) do
     message_frame
     |> Enum.each(fn %PgSiphon.Message{payload: payload, type: type, length: _length} ->
       # Logger.debug(inspect(payload, bin: :as_binaries, limit: :infinity))

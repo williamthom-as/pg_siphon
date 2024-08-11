@@ -6,6 +6,7 @@ defmodule PgSiphon.ProxyServer do
   @name :proxy_server
 
   alias PgSiphon.QueryServer
+  alias PgSiphon.MonitoringServer
 
   defmodule ProxyState do
     defstruct accept_pid: nil, from_port: 1337, to_host: 'localhost', to_port: 5432
@@ -100,6 +101,7 @@ defmodule PgSiphon.ProxyServer do
         # end)
 
         spawn(fn -> QueryServer.add_message(data) end)
+        spawn(fn -> MonitoringServer.log_message(data) end)
 
         :gen_tcp.send(t_sock, data)
         loop_forward(f_sock, t_sock, :client)
