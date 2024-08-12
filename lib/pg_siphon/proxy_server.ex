@@ -77,34 +77,56 @@ defmodule PgSiphon.ProxyServer do
 
     Logger.debug "Connection accepted!"
 
-    spawn(fn -> loop_forward(f_sock, t_sock, :client) end)
+    spawn(fn -> loop_forward(f_sock, t_sock, :client, {0, nil}) end)
     spawn(fn -> loop_forward(t_sock, f_sock, :server) end)
 
     loop_accept(l_sock, to_host, to_port)
   end
 
-  defp loop_forward(f_sock, t_sock, :client) do
+  defp loop_forward(f_sock, t_sock, :client, {0, nil}) do
     # recv all available bytes - 0
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        # Logger.debug("Data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
-        #
-        # spawn(fn ->
-        #   PgSiphon.Message.decode(data)
-        #   |> Enum.each(fn %PgSiphon.Message{payload: payload, type: type, length: _length} ->
-        #       payload
-        #       |> :binary.bin_to_list()
-        #       |> List.to_string()
-        #       |> (&("Type: " <> type <> " Message: " <> &1)).()
-        #       |> Logger.debug()
-        #   end)
-        # end)
+        Logger.debug("Data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
 
-        spawn(fn -> QueryServer.add_message(data) end)
-        spawn(fn -> MonitoringServer.log_message(data) end)
+        # We need to handle more cases here
+        <<msg_type::binary-size(1), length::integer-size(32), rest::binary>> = data
+        buf = if (length - 4) > byte_size(rest) && msg_type != <<0>> do
+          {length, data}
+        else
+          # determine if full message, send if done.
+          process_message_frame(data)
+
+          {0, nil}
+        end
 
         :gen_tcp.send(t_sock, data)
-        loop_forward(f_sock, t_sock, :client)
+
+        loop_forward(f_sock, t_sock, :client, buf)
+      {:error, _} ->
+        :gen_tcp.close(f_sock)
+        :gen_tcp.close(t_sock)
+    end
+  end
+
+  defp loop_forward(f_sock, t_sock, :client, {length, buf}) do
+    case :gen_tcp.recv(f_sock, 0) do
+      {:ok, data} ->
+        Logger.debug("Continued data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+
+        :gen_tcp.send(t_sock, buf)
+
+        buf = <<data::binary, buf::binary>>
+        # Logger.info("Buffering data: #{inspect(buf, bin: :as_binaries, limit: :infinity)}")
+        Logger.info("Buffering data size: #{byte_size(buf)}, length: #{length}")
+
+        if byte_size(buf) <= length do
+          loop_forward(f_sock, t_sock, :client, {length, buf})
+        else
+          process_message_frame(buf)
+          loop_forward(f_sock, t_sock, :client, {0, nil})
+        end
+
       {:error, _} ->
         :gen_tcp.close(f_sock)
         :gen_tcp.close(t_sock)
@@ -120,5 +142,12 @@ defmodule PgSiphon.ProxyServer do
         :gen_tcp.close(f_sock)
         :gen_tcp.close(t_sock)
     end
+  end
+
+  defp process_message_frame(data) do
+    # Logger.debug("Processing data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+
+    spawn(fn -> QueryServer.add_message(data) end)
+    spawn(fn -> MonitoringServer.log_message(data) end)
   end
 end

@@ -36,6 +36,8 @@ defmodule PgSiphon.Message do
   end
 
   def decode(<<66, length::integer-size(32), rest::binary>>) do
+    # Logger.debug(inspect(rest, bin: :as_binaries, limit: :infinity))
+
     <<message::binary-size(length - 4), rest::binary>> = rest
     [%PgSiphon.Message{payload: message, type: "B", length: length} | decode(rest)]
   end
@@ -70,7 +72,11 @@ defmodule PgSiphon.Message do
   end
 
   def decode(<<80, length::integer-size(32), rest::binary>>) do
+    # Logger.debug(inspect(length))
+
     <<message::binary-size(length - 4), rest::binary>> = rest
+    # Logger.debug(inspect(message))
+    # Logger.debug(inspect(rest, bin: :as_binaries, limit: :infinity))
 
     [%PgSiphon.Message{payload: message, type: "P", length: length} | decode(rest)]
   end
