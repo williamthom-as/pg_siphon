@@ -99,6 +99,12 @@ defmodule PgSiphon.Message do
     [%PgSiphon.Message{payload: message, type: "X", length: length} | decode(rest)]
   end
 
+  def decode(<<102, length::integer-size(32), rest::binary>>) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
+
+    [%PgSiphon.Message{payload: message, type: "f", length: length} | decode(rest)]
+  end
+
   def decode(<<112, length::integer-size(32), rest::binary>>) do
     <<message::binary-size(length - 4), rest::binary>> = rest
 

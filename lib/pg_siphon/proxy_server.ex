@@ -96,7 +96,18 @@ defmodule PgSiphon.ProxyServer do
         buf = cond do
           msg_type == <<0>> ->
             {0, nil}
+          msg_type == <<1>> ->
+            # I don't know what this message is:
+            # <<1, 102, 0, 0, 0, 36, ..., 0, 1, 0, 0, 68, 0, 0, 0, 6, 80, 0, 69,
+            # 0, 0, 0, 9, 0, 0, 0, 0, 0, 83, 0, 0, 0, 4>>
+            # I think this is a copy fail.
+
+            {0, nil}
           (length - 4) > byte_size(rest) -> # Full message not received.
+            # Logger.info("Full message not received: #{inspect(length, bin: :as_binaries)} - #{byte_size(rest)}")
+            # Logger.info("data: #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+            # Logger.info("rest: #{inspect(rest, bin: :as_binaries, limit: :infinity)}")
+
             {length, data}
           true ->
             <<packet::binary-size(length + 1), rest::binary>> = data
@@ -118,7 +129,7 @@ defmodule PgSiphon.ProxyServer do
   defp loop_forward(f_sock, t_sock, :client, {length, buf}) do
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        # Logger.debug("Continued data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+        Logger.debug("Continued data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
         :gen_tcp.send(t_sock, data)
 
         buf = <<data::binary, buf::binary>>
