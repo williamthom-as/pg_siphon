@@ -84,7 +84,8 @@ defmodule PgSiphon.MonitoringServer do
   def handle_cast({:log_message, message}, state) do
     perform_log_message(message, state)
 
-    {:noreply, state}
+
+    {:noreply, %State{count: state.count + 1}}
   end
 
   defp perform_log_message(message_frame, %State{recording: true, filter_message_types: []}) do

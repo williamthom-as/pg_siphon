@@ -75,7 +75,9 @@ defmodule PgSiphon.ProxyServer do
       active: false
     ])
 
-    Logger.debug "Connection accepted!"
+    # Should record this against query later for IDS.
+    {:ok, {ip, port}} = :inet.peername(f_sock)
+    Logger.debug "Connection accepted from #{inspect(ip)}:#{port}"
 
     spawn(fn -> loop_forward(f_sock, t_sock, :client, {0, nil}) end)
     spawn(fn -> loop_forward(t_sock, f_sock, :server) end)
@@ -129,7 +131,7 @@ defmodule PgSiphon.ProxyServer do
   defp loop_forward(f_sock, t_sock, :client, {length, buf}) do
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        Logger.debug("Continued data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+        # Logger.debug("Continued data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
         :gen_tcp.send(t_sock, data)
 
         buf = <<data::binary, buf::binary>>
