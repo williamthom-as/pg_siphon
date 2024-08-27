@@ -85,6 +85,7 @@ defmodule PgSiphon.ProxyServer do
     loop_accept(l_sock, to_host, to_port)
   end
 
+  # New frame
   defp loop_forward(f_sock, t_sock, :client, {0, _}) do
     # recv all available bytes - 0
     case :gen_tcp.recv(f_sock, 0) do
@@ -106,16 +107,15 @@ defmodule PgSiphon.ProxyServer do
 
             {0, nil}
           (length - 4) > byte_size(rest) -> # Full message not received.
-            # Logger.info("Full message not received: #{inspect(length, bin: :as_binaries)} - #{byte_size(rest)}")
-            # Logger.info("data: #{inspect(data, bin: :as_binaries, limit: :infinity)}")
-            # Logger.info("rest: #{inspect(rest, bin: :as_binaries, limit: :infinity)}")
+            Logger.info("Full message not received: #{inspect(length, bin: :as_binaries)} - #{byte_size(rest)}")
+            Logger.info("data: #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+            Logger.info("rest: #{inspect(rest, bin: :as_binaries, limit: :infinity)}")
 
             {length, data}
           true ->
             <<packet::binary-size(length + 1), rest::binary>> = data
-
-            # Logger.info("Splitting packet: #{inspect(packet, bin: :as_binaries, limit: :infinity)}")
-            # Logger.info("Splitting rest: #{inspect(rest, bin: :as_binaries, limit: :infinity)}")
+            Logger.info("Splitting packet: #{inspect(packet, bin: :as_binaries, limit: :infinity)}")
+            Logger.info("Splitting rest: #{inspect(rest, bin: :as_binaries, limit: :infinity)}")
 
             process_message_frame(packet)
             {byte_size(rest), rest}
@@ -128,19 +128,23 @@ defmodule PgSiphon.ProxyServer do
     end
   end
 
+  # Continuation frame
   defp loop_forward(f_sock, t_sock, :client, {length, buf}) do
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        # Logger.debug("Continued data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+        Logger.debug("Continued data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
         :gen_tcp.send(t_sock, data)
 
-        buf = <<data::binary, buf::binary>>
-        # Logger.info("Buffering data: #{inspect(buf, bin: :as_binaries, limit: :infinity)}")
-        # Logger.info("Buffering data size: #{byte_size(buf)}, length: #{length}")
+        buf = <<buf::binary, data::binary>>
+
+        Logger.info("Buffering data: #{inspect(buf, bin: :as_binaries, limit: :infinity)}")
+        Logger.info("Buffering data size: #{byte_size(buf)}, length: #{length}")
 
         if byte_size(buf) <= length do
+          Logger.info("Not all data received")
           loop_forward(f_sock, t_sock, :client, {length, buf})
         else
+          Logger.info("All data received ~~~~~~~~~~~~~~~~~")
           process_message_frame(buf)
           loop_forward(f_sock, t_sock, :client, {0, nil})
         end
