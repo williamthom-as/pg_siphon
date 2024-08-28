@@ -82,9 +82,9 @@ defmodule PgSiphon.QueryServer do
 
   # Implementation
 
-  defp perform_message_insert(message, %State{table: table, recording: true} = state) do
-    decoded_messages = message
-    |> decode()
+  defp perform_message_insert(decoded_messages, %State{table: table, recording: true} = state) do
+    # decoded_messages = message
+    # |> decode()
 
     Enum.each(decoded_messages, fn %Message{payload: payload, type: type, length: length} ->
       case :ets.lookup(table, payload) do

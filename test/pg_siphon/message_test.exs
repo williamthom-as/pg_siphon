@@ -60,4 +60,41 @@ defmodule PgSiphon.MessageTest do
     message_frame = <<83, 0, 0, 0, 4>>
     assert [%PgSiphon.Message{payload: "", type: "S", length: 4}] = PgSiphon.Message.decode(message_frame)
   end
+
+  test "decode/1 with unknown" do
+    message_frame = <<0, 83, 69, 76, 69, 67, 84, 32, 42, 32, 70, 82>>
+    assert [
+      %PgSiphon.Message{
+        payload: <<0, 83, 69, 76, 69, 67, 84, 32, 42, 32,
+          70, 82>>,
+        type: "U",
+        length: 12
+      }
+    ] = PgSiphon.Message.decode(message_frame)
+  end
+
+  test "parse/1 with extras" do
+    message_frame = <<80, 0, 0, 0, 28, 0, 83, 69, 76, 69, 67, 84, 32, 42, 32, 70, 82, 79, 77, 32, 110, 97, 109, 101, 115, 59, 0, 0, 0, 68, 0, 0, 0, 6, 83, 0, 72, 0, 0, 0, 4, 80, 0, 0, 0, 28, 0, 83, 69, 76, 69, 67, 84, 32, 42, 32, 70, 82>>
+    assert [
+      %PgSiphon.Message{
+        payload: <<0, 83, 69, 76, 69, 67, 84, 32, 42, 32,
+          70, 82, 79, 77, 32, 110, 97, 109, 101, 115, 59, 0,
+          0, 0>>,
+        type: "P",
+        length: 28
+      },
+      %PgSiphon.Message{
+        payload: <<0>>,
+        type: "D",
+        length: 2
+      },
+      %PgSiphon.Message{payload: "", type: "H", length: 4},
+      %PgSiphon.Message{
+        payload: <<80, 0, 0, 0, 28, 0, 83, 69, 76, 69, 67,
+          84, 32, 42, 32, 70, 82>>,
+        type: "U",
+        length: 17
+      }
+    ] = PgSiphon.Message.decode(message_frame)
+  end
 end
