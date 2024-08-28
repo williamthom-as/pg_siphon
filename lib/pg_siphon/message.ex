@@ -104,6 +104,7 @@ defmodule PgSiphon.Message do
     [%PgSiphon.Message{payload: message, type: "p", length: length} | decode(rest)]
   end
 
+  # We cannot assume
   def decode(excess) do
     Logger.debug(
       "Unknown message cannot be parsed [#{inspect(excess, bin: :as_binary, limit: :infinity)}]"

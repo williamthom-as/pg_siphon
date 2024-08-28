@@ -86,39 +86,26 @@ defmodule PgSiphon.ProxyServer do
   end
 
   # New frame
-  defp loop_forward(f_sock, t_sock, :client, {0, _}) do
-    # recv all available bytes - 0
+  defp loop_forward(f_sock, t_sock, :client, {0, _data}) do
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
         # Logger.debug("Data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
 
         :gen_tcp.send(t_sock, data)
 
-        # We need to handle more cases here
-        <<msg_type::binary-size(1), length::integer-size(32), rest::binary>> = data
+        <<msg_type::binary-size(1), _length::integer-size(32), _rest::binary>> = data
         buf = cond do
           msg_type == <<0>> ->
             {0, nil}
           msg_type == <<1>> ->
-            # I don't know what this message is:
-            # <<1, 102, 0, 0, 0, 36, ..., 0, 1, 0, 0, 68, 0, 0, 0, 6, 80, 0, 69,
-            # 0, 0, 0, 9, 0, 0, 0, 0, 0, 83, 0, 0, 0, 4>>
-            # I think this is a copy fail.
-
             {0, nil}
-          (length - 4) > byte_size(rest) -> # Full message not received.
-            Logger.info("Full message not received: #{inspect(length, bin: :as_binaries)} - #{byte_size(rest)}")
-            Logger.info("data: #{inspect(data, bin: :as_binaries, limit: :infinity)}")
-            Logger.info("rest: #{inspect(rest, bin: :as_binaries, limit: :infinity)}")
-
-            {length, data}
           true ->
-            <<packet::binary-size(length + 1), rest::binary>> = data
-            Logger.info("Splitting packet: #{inspect(packet, bin: :as_binaries, limit: :infinity)}")
-            Logger.info("Splitting rest: #{inspect(rest, bin: :as_binaries, limit: :infinity)}")
+            {buffered, messages} =
+              PgSiphon.Message.decode(data)
+              |> Enum.split_with(fn message -> message.type == "U" end)
 
-            process_message_frame(packet)
-            {byte_size(rest), rest}
+            dispatch_full_frames(messages)
+            calculate_buf(buffered)
         end
 
         loop_forward(f_sock, t_sock, :client, buf)
@@ -129,25 +116,22 @@ defmodule PgSiphon.ProxyServer do
   end
 
   # Continuation frame
-  defp loop_forward(f_sock, t_sock, :client, {length, buf}) do
+  defp loop_forward(f_sock, t_sock, :client, {_length, buf}) do
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        Logger.debug("Continued data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
         :gen_tcp.send(t_sock, data)
 
-        buf = <<buf::binary, data::binary>>
+        joined_data = <<buf::binary, data::binary>>
+        Logger.debug("Continued data recv:\n #{inspect(joined_data, bin: :as_binaries, limit: :infinity)}")
 
-        Logger.info("Buffering data: #{inspect(buf, bin: :as_binaries, limit: :infinity)}")
-        Logger.info("Buffering data size: #{byte_size(buf)}, length: #{length}")
+        {buffered, messages} =
+          PgSiphon.Message.decode(joined_data)
+          |> Enum.split_with(fn message -> message.type == "U" end)
 
-        if byte_size(buf) <= length do
-          Logger.info("Not all data received")
-          loop_forward(f_sock, t_sock, :client, {length, buf})
-        else
-          Logger.info("All data received ~~~~~~~~~~~~~~~~~")
-          process_message_frame(buf)
-          loop_forward(f_sock, t_sock, :client, {0, nil})
-        end
+        dispatch_full_frames(messages)
+        buf = calculate_buf(buffered)
+
+        loop_forward(f_sock, t_sock, :client, buf)
       {:error, _} ->
         :gen_tcp.close(f_sock)
         :gen_tcp.close(t_sock)
@@ -165,10 +149,18 @@ defmodule PgSiphon.ProxyServer do
     end
   end
 
-  defp process_message_frame(data) do
-    # Logger.debug("Processing data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+  defp calculate_buf(buffered) do
+    if (length(buffered) > 0) do
+      buf = buffered |> Enum.map(fn message -> message.payload end) |> Enum.join()
 
-    spawn(fn -> QueryServer.add_message(data) end)
-    spawn(fn -> MonitoringServer.log_message(data) end)
+      {byte_size(buf), buf}
+    else
+      {0, nil}
+    end
+  end
+
+  defp dispatch_full_frames(decoded_messages) do
+    spawn(fn -> QueryServer.add_message(decoded_messages) end)
+    spawn(fn -> MonitoringServer.log_message(decoded_messages) end)
   end
 end
