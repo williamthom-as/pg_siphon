@@ -88,17 +88,15 @@ defmodule PgSiphon.MonitoringServer do
     {:noreply, %State{count: state.count + 1}}
   end
 
-  defp perform_log_message(message_frame, %State{recording: true, filter_message_types: []}) do
-    message_frame
-    |> decode()
+  defp perform_log_message(decoded_messages, %State{recording: true, filter_message_types: []}) do
+    decoded_messages
     |> log_message_frame()
 
     :ok
   end
 
-  defp perform_log_message(message_frame, %State{recording: true, filter_message_types: filter_message_types}) do
-    message_frame
-    |> decode()
+  defp perform_log_message(decoded_messages, %State{recording: true, filter_message_types: filter_message_types}) do
+    decoded_messages
     |> Enum.filter(fn %PgSiphon.Message{type: type} ->
       Enum.member?(filter_message_types, type)
     end)

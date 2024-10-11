@@ -35,14 +35,14 @@ defmodule PgSiphon.Message do
     [%PgSiphon.Message{payload: message, type: "0", length: length} | decode(rest)]
   end
 
-  def decode(<<66, length::integer-size(32), rest::binary>>) do
+  def decode(<<66, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     # Logger.debug(inspect(rest, bin: :as_binaries, limit: :infinity))
 
     <<message::binary-size(length - 4), rest::binary>> = rest
     [%PgSiphon.Message{payload: message, type: "B", length: length} | decode(rest)]
   end
 
-  def decode(<<67, length::integer-size(32), rest::binary>>) do
+  def decode(<<67, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     length = length - 4
     <<_desc_type::binary-size(1), message::binary-size(length - 1), rest::binary>> = rest
 
@@ -50,77 +50,67 @@ defmodule PgSiphon.Message do
     [%PgSiphon.Message{payload: message, type: "C", length: length} | decode(rest)]
   end
 
-  def decode(<<68, length::integer-size(32), rest::binary>>) do
+  # Possibly wrong?
+  def decode(<<68, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     length = length - 4
     # desc_type -> 'S' to describe a prepared statement; or 'P' to describe a portal.
     <<_desc_type::binary-size(1), message::binary-size(length - 1), rest::binary>> = rest
-
-    # Ignoring desc type for now
     [%PgSiphon.Message{payload: message, type: "D", length: length} | decode(rest)]
   end
 
-  def decode(<<69, length::integer-size(32), rest::binary>>) do
+  def decode(<<69, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
 
     [%PgSiphon.Message{payload: message, type: "E", length: length} | decode(rest)]
   end
 
-  def decode(<<72, length::integer-size(32), rest::binary>>) do
+  def decode(<<72, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
-
     [%PgSiphon.Message{payload: message, type: "H", length: length} | decode(rest)]
   end
 
-  def decode(<<80, length::integer-size(32), rest::binary>>) do
-    # Logger.debug(inspect(length))
-
+  def decode(<<80, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
-    # Logger.debug(inspect(message))
-    # Logger.debug(inspect(rest, bin: :as_binaries, limit: :infinity))
-
     [%PgSiphon.Message{payload: message, type: "P", length: length} | decode(rest)]
   end
 
-  def decode(<<81, length::integer-size(32), rest::binary>>) do
+  def decode(<<81, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
 
     [%PgSiphon.Message{payload: message, type: "Q", length: length} | decode(rest)]
   end
 
-  def decode(<<83, length::integer-size(32), rest::binary>>) do
+  def decode(<<83, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
 
     [%PgSiphon.Message{payload: message, type: "S", length: length} | decode(rest)]
   end
 
-  def decode(<<88, length::integer-size(32), rest::binary>>) do
+  def decode(<<88, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
 
     [%PgSiphon.Message{payload: message, type: "X", length: length} | decode(rest)]
   end
 
-  def decode(<<102, length::integer-size(32), rest::binary>>) do
+  def decode(<<102, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
 
     [%PgSiphon.Message{payload: message, type: "f", length: length} | decode(rest)]
   end
 
-  def decode(<<112, length::integer-size(32), rest::binary>>) do
+  def decode(<<112, length::integer-size(32), rest::binary>>) when (length - 4) <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
 
     [%PgSiphon.Message{payload: message, type: "p", length: length} | decode(rest)]
   end
 
-  def decode(unknown) when byte_size(unknown) >= 4 do
+  # We cannot assume
+  def decode(excess) do
     Logger.debug(
-      "Unknown message cannot be parsed [#{inspect(unknown, bin: :as_binary, limit: :infinity)}]"
+      "Unknown message cannot be parsed [#{inspect(excess, bin: :as_binary, limit: :infinity)}]"
     )
 
-    []
-  end
-
-  def decode(_) do
-    []
+    [%PgSiphon.Message{payload: excess, type: "U", length: byte_size(excess)}]
   end
 
   def valid_type?(type), do: Map.has_key?(@fe_msg_id, type)

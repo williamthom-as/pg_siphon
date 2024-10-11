@@ -8,8 +8,8 @@ defmodule PgSiphon.ServicesSupervisor do
   def init(:ok) do
     children = [
       PgSiphon.QueryServer,
-      PgSiphon.ProxyServer,
-      PgSiphon.MonitoringServer
+      PgSiphon.MonitoringServer,
+      PgSiphon.ProxyServer
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
