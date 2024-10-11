@@ -9,7 +9,7 @@ defmodule PgSiphon.ProxyServer do
   alias PgSiphon.MonitoringServer
 
   defmodule ProxyState do
-    defstruct accept_pid: nil, from_port: 1337, to_host: 'localhost', to_port: 5432
+    defstruct accept_pid: nil, from_port: 1337, to_host: 'localhost', to_port: 5432, running: false
   end
 
   # Client interface
@@ -35,6 +35,10 @@ defmodule PgSiphon.ProxyServer do
     GenServer.stop(@name)
   end
 
+  def running_state do
+    GenServer.call(@name, :running_state)
+  end
+
   # GenServer callbacks
 
   def init(%ProxyState{} = state) do
@@ -52,7 +56,11 @@ defmodule PgSiphon.ProxyServer do
 
     accept_pid = spawn_link(fn -> loop_accept(l_sock, state.to_host, state.to_port) end)
 
-    {:reply, :ok, %{state | accept_pid: accept_pid}}
+    {:reply, :ok, %{state | accept_pid: accept_pid, running: true}}
+  end
+
+  def handle_cast(:running_state, _from, state) do
+    {:reply, state.running, state}
   end
 
   # Rely on supervisor to reboot

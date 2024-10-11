@@ -22,8 +22,7 @@ defmodule PgSiphon.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:postgrex, ">= 0.18.0"},
-      {:ratatouille, "~> 0.5.0"}
+      {:postgrex, ">= 0.18.0"}
     ]
   end
 end
