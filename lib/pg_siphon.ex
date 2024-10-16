@@ -1,11 +1,15 @@
 defmodule PgSiphon do
   @moduledoc false
 
+  require Logger
+
   use Application
 
   def start(_type, _args) do
-    IO.puts "Starting ..."
+    Logger.info("Starting application supervision tree ...")
+
     children = [
+      {Phoenix.PubSub, name: :broadcaster},
       PgSiphon.ServicesSupervisor
     ]
 
