@@ -9,13 +9,17 @@ defmodule PgSiphon.ProxyServer do
   alias PgSiphon.MonitoringServer
 
   defmodule ProxyState do
-    defstruct accept_pid: nil, from_port: 1337, to_host: 'localhost', to_port: 5432, running: false
+    defstruct accept_pid: nil,
+              from_port: 1337,
+              to_host: ~c"localhost",
+              to_port: 5432,
+              running: false
   end
 
   # Client interface
 
   def start_link(_arg) do
-    Logger.info "Starting ProxyServer..."
+    Logger.info("Starting ProxyServer...")
 
     result = GenServer.start_link(__MODULE__, %ProxyState{}, name: @name)
 
@@ -24,10 +28,12 @@ defmodule PgSiphon.ProxyServer do
         start_listen(s_pid)
 
         {:ok, s_pid}
+
       {:error, {:already_started, old_pid}} ->
         {:ok, old_pid}
+
       error ->
-        Logger.error(inspect error)
+        Logger.error(inspect(error))
     end
   end
 
@@ -46,13 +52,14 @@ defmodule PgSiphon.ProxyServer do
   end
 
   def handle_call(:listen, _from, state) do
-    {:ok, l_sock} = :gen_tcp.listen(state.from_port, [
-      :binary,
-      packet: :raw,
-      active: false
-    ])
+    {:ok, l_sock} =
+      :gen_tcp.listen(state.from_port, [
+        :binary,
+        packet: :raw,
+        active: false
+      ])
 
-    Logger.info "Listening for connections on port #{state.from_port}"
+    Logger.info("Listening for connections on port #{state.from_port}")
 
     accept_pid = spawn_link(fn -> loop_accept(l_sock, state.to_host, state.to_port) end)
 
@@ -65,7 +72,7 @@ defmodule PgSiphon.ProxyServer do
 
   # Rely on supervisor to reboot
   def handle_info({:EXIT, _pid, reason}, %ProxyState{} = state) do
-    IO.puts("Process exited with reason: #{inspect reason}")
+    IO.puts("Process exited with reason: #{inspect(reason)}")
     {:stop, {:exit, reason}, state}
   end
 
@@ -74,18 +81,20 @@ defmodule PgSiphon.ProxyServer do
   end
 
   defp loop_accept(l_sock, to_host, to_port) do
-    Logger.debug "Waiting to accept connection..."
+    Logger.debug("Waiting to accept connection...")
 
     {:ok, f_sock} = :gen_tcp.accept(l_sock)
-    {:ok, t_sock} = :gen_tcp.connect(to_host, to_port, [
-      :binary,
-      packet: :raw,
-      active: false
-    ])
+
+    {:ok, t_sock} =
+      :gen_tcp.connect(to_host, to_port, [
+        :binary,
+        packet: :raw,
+        active: false
+      ])
 
     # Should record this against query later for IDS.
     {:ok, {ip, port}} = :inet.peername(f_sock)
-    Logger.debug "Connection accepted from #{inspect(ip)}:#{port}"
+    Logger.debug("Connection accepted from #{inspect(ip)}:#{port}")
 
     spawn(fn -> loop_forward(f_sock, t_sock, :client, {0, nil}) end)
     spawn(fn -> loop_forward(t_sock, f_sock, :server) end)
@@ -102,21 +111,26 @@ defmodule PgSiphon.ProxyServer do
         :gen_tcp.send(t_sock, data)
 
         <<msg_type::binary-size(1), _length::integer-size(32), _rest::binary>> = data
-        buf = cond do
-          msg_type == <<0>> ->
-            {0, nil}
-          msg_type == <<1>> ->
-            {0, nil}
-          true ->
-            {buffered, messages} =
-              PgSiphon.Message.decode(data)
-              |> Enum.split_with(fn message -> message.type == "U" end)
 
-            dispatch_full_frames(messages)
-            calculate_buf(buffered)
-        end
+        buf =
+          cond do
+            msg_type == <<0>> ->
+              {0, nil}
+
+            msg_type == <<1>> ->
+              {0, nil}
+
+            true ->
+              {buffered, messages} =
+                PgSiphon.Message.decode(data)
+                |> Enum.split_with(fn message -> message.type == "U" end)
+
+              dispatch_full_frames(messages)
+              calculate_buf(buffered)
+          end
 
         loop_forward(f_sock, t_sock, :client, buf)
+
       {:error, _} ->
         :gen_tcp.close(f_sock)
         :gen_tcp.close(t_sock)
@@ -130,7 +144,12 @@ defmodule PgSiphon.ProxyServer do
         :gen_tcp.send(t_sock, data)
 
         joined_data = <<buf::binary, data::binary>>
-        Logger.debug("Continued data recv:\n #{inspect(joined_data, bin: :as_binaries, limit: :infinity)}")
+
+        ## Uncomment this to debug messages in bin format. Largely unnecessary now the frames are
+        ## fully mapped.
+        # Logger.debug(
+        #   "Continued data recv:\n #{inspect(joined_data, bin: :as_binaries, limit: :infinity)}"
+        # )
 
         {buffered, messages} =
           PgSiphon.Message.decode(joined_data)
@@ -140,6 +159,7 @@ defmodule PgSiphon.ProxyServer do
         buf = calculate_buf(buffered)
 
         loop_forward(f_sock, t_sock, :client, buf)
+
       {:error, _} ->
         :gen_tcp.close(f_sock)
         :gen_tcp.close(t_sock)
@@ -151,6 +171,7 @@ defmodule PgSiphon.ProxyServer do
       {:ok, data} ->
         :gen_tcp.send(t_sock, data)
         loop_forward(f_sock, t_sock, :server)
+
       {:error, _} ->
         :gen_tcp.close(f_sock)
         :gen_tcp.close(t_sock)
@@ -158,7 +179,7 @@ defmodule PgSiphon.ProxyServer do
   end
 
   defp calculate_buf(buffered) do
-    if (length(buffered) > 0) do
+    if length(buffered) > 0 do
       buf = buffered |> Enum.map(fn message -> message.payload end) |> Enum.join()
 
       {byte_size(buf), buf}

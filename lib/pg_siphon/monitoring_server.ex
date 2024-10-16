@@ -5,7 +5,7 @@ defmodule PgSiphon.MonitoringServer do
 
   @name :monitoring_server
 
-  import PgSiphon.Message, only: [decode: 1, log_message_frame: 1]
+  import PgSiphon.Message, only: [log_message_frame: 1]
 
   defmodule State do
     defstruct recording: true, filter_message_types: [], count: 0
@@ -63,9 +63,8 @@ defmodule PgSiphon.MonitoringServer do
 
   @impl true
   def handle_cast({:remove_filter_type, type}, state) do
-    {:noreply, %State{state | filter_message_types:
-      Enum.filter(state.filter_message_types, &(&1 != type))}
-    }
+    {:noreply,
+     %State{state | filter_message_types: Enum.filter(state.filter_message_types, &(&1 != type))}}
   end
 
   @impl true
@@ -84,8 +83,7 @@ defmodule PgSiphon.MonitoringServer do
   def handle_cast({:log_message, message}, state) do
     perform_log_message(message, state)
 
-
-    {:noreply, %State{count: state.count + 1}}
+    {:noreply, %State{state | count: state.count + 1}}
   end
 
   defp perform_log_message(decoded_messages, %State{recording: true, filter_message_types: []}) do
@@ -95,7 +93,10 @@ defmodule PgSiphon.MonitoringServer do
     :ok
   end
 
-  defp perform_log_message(decoded_messages, %State{recording: true, filter_message_types: filter_message_types}) do
+  defp perform_log_message(decoded_messages, %State{
+         recording: true,
+         filter_message_types: filter_message_types
+       }) do
     decoded_messages
     |> Enum.filter(fn %PgSiphon.Message{type: type} ->
       Enum.member?(filter_message_types, type)
