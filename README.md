@@ -24,6 +24,14 @@ To start the proxy server, run:
 mix run -e 'PgSiphon.ServicesSupervisor.start_link()'
 ```
 
+### Incorporating library
+
+If you wish to act on a message frame there is a Phoenix PubSub channel named :broadcaster (topic 'message_frames') which you can subscribe to.
+
+Currently, there is only one queue named :notify. More will come in the future.
+
+Further info can be found in the module `PgSiphon.Broadcaster`.
+
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at <https://hexdocs.pm/pg_siphon>.
