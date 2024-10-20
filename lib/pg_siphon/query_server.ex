@@ -5,8 +5,6 @@ defmodule PgSiphon.QueryServer do
 
   alias PgSiphon.Message
 
-  import PgSiphon.Message, only: [decode: 1]
-
   @name :query_server
 
   defmodule State do
@@ -83,13 +81,11 @@ defmodule PgSiphon.QueryServer do
   # Implementation
 
   defp perform_message_insert(decoded_messages, %State{table: table, recording: true} = state) do
-    # decoded_messages = message
-    # |> decode()
-
     Enum.each(decoded_messages, fn %Message{payload: payload, type: type, length: length} ->
       case :ets.lookup(table, payload) do
         [] ->
           :ets.insert(state.table, {payload, type, length, 1})
+
         [{payload, type, length, count}] ->
           :ets.insert(state.table, {payload, type, length, count + 1})
       end
