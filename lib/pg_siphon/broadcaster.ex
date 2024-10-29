@@ -9,7 +9,7 @@
 # end
 
 # @impl true
-# def handle_info({:notify, message}, state) do
+# def handle_info({:new_message_frame, message}, state) do
 #   IO.puts("RECEIVED: #{message}")
 #   {:noreply, state}
 # end
@@ -20,11 +20,19 @@ defmodule PgSiphon.Broadcaster do
   @pubsub_name :broadcaster
   @pubsub_topic "message_frames"
 
-  def notify(messages) do
-    Phoenix.PubSub.broadcast(@pubsub_name, @pubsub_topic, {:notify, messages})
+  def new_message_frame(messages) do
+    Phoenix.PubSub.broadcast(@pubsub_name, @pubsub_topic, {:new_message_frame, messages})
 
     # This is to make the flow in log_message_frame work,
     # fix it. It's dumb to be this tightly coupled.
     messages.payload
+  end
+
+  def message_types_changed(message_types) do
+    Phoenix.PubSub.broadcast(@pubsub_name, @pubsub_topic, {:message_types_changed, message_types})
+  end
+
+  def connections_changed() do
+    Phoenix.PubSub.broadcast(@pubsub_name, @pubsub_topic, {:connections_changed})
   end
 end

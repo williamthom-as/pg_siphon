@@ -7,6 +7,7 @@ defmodule PgSiphon.ProxyServer do
 
   alias PgSiphon.QueryServer
   alias PgSiphon.MonitoringServer
+  alias PgSiphon.ActiveConnectionsServer
 
   defmodule ProxyState do
     defstruct accept_pid: nil,
@@ -21,7 +22,19 @@ defmodule PgSiphon.ProxyServer do
   def start_link(_arg) do
     Logger.info("Starting ProxyServer...")
 
-    result = GenServer.start_link(__MODULE__, %ProxyState{}, name: @name)
+    config = Application.get_env(:pg_siphon, :proxy_server)
+
+    Logger.info("ProxyServer config: #{inspect(config)}")
+
+    proxy_state = %ProxyState{
+      from_port: config[:from_port],
+      to_host: config[:to_host],
+      to_port: config[:to_port]
+    }
+
+    Logger.info("ProxyServer state: #{inspect(proxy_state)}")
+
+    result = GenServer.start_link(__MODULE__, proxy_state, name: @name)
 
     case result do
       {:ok, s_pid} ->
@@ -95,6 +108,13 @@ defmodule PgSiphon.ProxyServer do
     # Should record this against query later for IDS.
     {:ok, {ip, port}} = :inet.peername(f_sock)
     Logger.debug("Connection accepted from #{inspect(ip)}:#{port}")
+    # send to a different process to log
+    spawn(fn ->
+      ActiveConnectionsServer.add_connection(
+        {ip, port},
+        :os.system_time(:seconds)
+      )
+    end)
 
     spawn(fn -> loop_forward(f_sock, t_sock, :client, {0, nil}) end)
     spawn(fn -> loop_forward(t_sock, f_sock, :server) end)

@@ -5,6 +5,8 @@ defmodule PgSiphon.MonitoringServer do
 
   @name :monitoring_server
 
+  alias PgSiphon.Broadcaster
+
   import PgSiphon.Message, only: [log_message_frame: 1]
 
   defmodule State do
@@ -54,7 +56,11 @@ defmodule PgSiphon.MonitoringServer do
   @impl true
   def handle_cast({:add_filter_type, type}, state) do
     if PgSiphon.Message.valid_type?(type) && !Enum.member?(state.filter_message_types, type) do
-      {:noreply, %State{state | filter_message_types: [type | state.filter_message_types]}}
+      new_filtered_types = [type | state.filter_message_types]
+
+      Broadcaster.message_types_changed(new_filtered_types)
+
+      {:noreply, %State{state | filter_message_types: new_filtered_types}}
     else
       Logger.error("Invalid message type: #{type}")
       {:noreply, state}
@@ -63,12 +69,17 @@ defmodule PgSiphon.MonitoringServer do
 
   @impl true
   def handle_cast({:remove_filter_type, type}, state) do
-    {:noreply,
-     %State{state | filter_message_types: Enum.filter(state.filter_message_types, &(&1 != type))}}
+    new_filtered_types = Enum.filter(state.filter_message_types, &(&1 != type))
+
+    Broadcaster.message_types_changed(new_filtered_types)
+
+    {:noreply, %State{state | filter_message_types: new_filtered_types}}
   end
 
   @impl true
   def handle_cast(:clear_filter_types, state) do
+    Broadcaster.message_types_changed([])
+
     {:noreply, %State{state | filter_message_types: []}}
   end
 
