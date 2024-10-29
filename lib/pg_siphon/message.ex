@@ -129,7 +129,7 @@ defmodule PgSiphon.Message do
       |> Enum.filter(&(&1 != 0))
       |> List.to_string()
       |> (&%{payload: &1, type: type}).()
-      |> PgSiphon.Broadcaster.notify()
+      |> PgSiphon.Broadcaster.new_message_frame()
       |> (&("Type: " <> type <> " Message: " <> &1)).()
       |> Logger.debug()
     end)

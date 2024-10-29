@@ -28,7 +28,7 @@ mix run -e 'PgSiphon.ServicesSupervisor.start_link()'
 
 If you wish to act on a message frame there is a Phoenix PubSub channel named :broadcaster (topic 'message_frames') which you can subscribe to.
 
-Currently, there is only one queue named :notify. More will come in the future.
+Currently, there is only one queue named :new_message_frame. More will come in the future.
 
 Further info can be found in the module `PgSiphon.Broadcaster`.
 
