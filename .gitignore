@@ -67,3 +67,5 @@ erl_crash.dump
 # End of https://www.toptal.com/developers/gitignore/api/elixir,visualstudiocode
 
 /sandpit
+
+.DS_Store
