@@ -128,7 +128,7 @@ defmodule PgSiphon.Message do
       # Strip out null bytes
       |> Enum.filter(&(&1 != 0))
       |> List.to_string()
-      |> (&%{payload: &1, type: type}).()
+      |> (&%{payload: &1, type: type, time: :os.system_time(:millisecond)}).()
       |> PgSiphon.Broadcaster.new_message_frame()
       |> (&("Type: " <> type <> " Message: " <> &1)).()
       |> Logger.debug()
