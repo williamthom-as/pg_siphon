@@ -119,6 +119,10 @@ defmodule PgSiphon.Message do
 
   def get_fe_message_types, do: @fe_msg_id
 
+  def get_name_for_message_type(type) do
+    Map.get(@fe_msg_id, type)
+  end
+
   def log_message_frame(message_frame) do
     # This is awful, fix this up.
     message_frame
