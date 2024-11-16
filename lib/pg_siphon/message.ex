@@ -29,10 +29,26 @@ defmodule PgSiphon.Message do
 
   def decode(<<>>), do: []
 
-  def decode(<<0, 0, 0, length::integer-size(8), rest::binary>>) do
+  def decode(<<length::integer-size(32), 4, rest::binary>>) when length - 4 <= byte_size(rest) do
+    <<message::binary-size(length - 4), rest::binary>> = rest
+    [%PgSiphon.Message{payload: message, type: "K", length: length} | decode(rest)]
+  end
+
+  def decode(<<0, length::integer-size(32), rest::binary>>) do
     <<message::binary-size(length - 4), rest::binary>> = rest
     [%PgSiphon.Message{payload: message, type: "0", length: length} | decode(rest)]
   end
+
+
+
+  def decode(<<22, length::integer-size(32), rest::binary>> = message) do
+    IO.puts "Here!!"
+    IO.inspect(message)
+
+    <<message::binary-size(length - 4), rest::binary>> = rest
+    [%PgSiphon.Message{payload: message, type: "\"", length: length} | decode(rest)]
+  end
+
 
   def decode(<<66, length::integer-size(32), rest::binary>>) when length - 4 <= byte_size(rest) do
     # Logger.debug(inspect(rest, bin: :as_binaries, limit: :infinity))
