@@ -61,8 +61,14 @@ defmodule PgSiphon.MessageTest do
     assert [%PgSiphon.Message{payload: "", type: "S", length: 4}] = PgSiphon.Message.decode(message_frame)
   end
 
+  test "parse/1 with nil message" do
+    message_frame = <<0, 0, 0, 8, 4, 210, 22, 47>>
+    assert [%PgSiphon.Message{payload: <<4, 210, 22, 47>>, type: "0", length: 8}] = PgSiphon.Message.decode(message_frame)
+  end
+
   test "decode/1 with unknown" do
     message_frame = <<0, 83, 69, 76, 69, 67, 84, 32, 42, 32, 70, 82>>
+
     assert [
       %PgSiphon.Message{
         payload: <<0, 83, 69, 76, 69, 67, 84, 32, 42, 32,

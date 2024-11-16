@@ -126,7 +126,7 @@ defmodule PgSiphon.ProxyServer do
   defp loop_forward(f_sock, t_sock, :client, {0, _data}) do
     case :gen_tcp.recv(f_sock, 0) do
       {:ok, data} ->
-        # Logger.debug("Data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
+        Logger.debug("Data recv:\n #{inspect(data, bin: :as_binaries, limit: :infinity)}")
 
         :gen_tcp.send(t_sock, data)
 
