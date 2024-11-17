@@ -38,6 +38,10 @@ You will need to configure your application to use the proxy server.
 
 Unless otherwise changed, the proxy server will listen on `localhost:1337` and forward all queries to `localhost:5432`.
 
+Note: You **must** edit postgresql.conf to disable SSL (ssl=off) for now as it is not supported.
+
+You probably also want to edit pg_hba.conf to trust.
+
 To start the proxy server, run:
 
 ```bash
