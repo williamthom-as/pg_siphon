@@ -21,6 +21,8 @@ defmodule PgSiphon.Message do
     "c" => "Copy completion",
     "f" => "Copy failure",
     "X" => "Termination",
+    "ssl" => "SSL request",
+    "tls_handshake" => "TLS handshake",
     "0" => nil
   }
 
@@ -29,18 +31,37 @@ defmodule PgSiphon.Message do
 
   def decode(<<>>), do: []
 
-  def decode(<<0, length::integer-size(24), rest::binary>>) when length - 4 == byte_size(rest) do
-    <<message::binary-size(length - 4), rest::binary>> = rest
-    [%PgSiphon.Message{payload: message, type: "0", length: length} | decode(rest)]
+  # 80877103 = <<4, 210, 22, 47>>
+  def decode(<<0, 0, 0, 8, 4, 210, 22, 47, rest::binary>>) do
+    [%PgSiphon.Message{
+      payload: <<4, 210, 22, 47>>,
+      type: "ssl",
+      length: 8
+    } | decode(rest)]
   end
 
-  # This is a TLS message. it breaks things. this shouldn't be here long term
-  def decode(<<22, length::integer-size(32), rest::binary>> = message) do
-    IO.puts "Here!!"
-    IO.inspect(message)
+  # tls handshake
+  def decode(<<20, 3, 3, 0, 1, 1, 22, _major::8, _minor::8, length::16, _rest::binary>> = _message) do
+    [%PgSiphon.Message{
+      payload: "Cannot process TLS messages",
+      type: "tls_handshake",
+      length: length + 9
+    }]
+  end
 
+  # tls change cypher suite
+  def decode(<<22, _major::8, _minor::8, length::16, msg_type::8, _rest::binary>> = _message) do
+    [%PgSiphon.Message{
+      payload: "Cannot process TLS messages",
+      type: "tls_change_cypher",
+      length: length + 5
+    }]
+  end
+
+  # tls message data
+  def decode(<<23, length::integer-size(32), rest::binary>> = message) do
     <<message::binary-size(length - 4), rest::binary>> = rest
-    [%PgSiphon.Message{payload: message, type: "\"", length: length} | decode(rest)]
+    [%PgSiphon.Message{payload: "Cannot process TLS messages", type: "tls_message_data", length: length}]
   end
 
   def decode(<<66, length::integer-size(32), rest::binary>>) when length - 4 <= byte_size(rest) do
