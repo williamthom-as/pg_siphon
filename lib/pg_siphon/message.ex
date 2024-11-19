@@ -33,35 +33,49 @@ defmodule PgSiphon.Message do
 
   # 80877103 = <<4, 210, 22, 47>>
   def decode(<<0, 0, 0, 8, 4, 210, 22, 47, rest::binary>>) do
-    [%PgSiphon.Message{
-      payload: <<4, 210, 22, 47>>,
-      type: "ssl",
-      length: 8
-    } | decode(rest)]
+    [
+      %PgSiphon.Message{
+        payload: <<4, 210, 22, 47>>,
+        type: "ssl",
+        length: 8
+      }
+      | decode(rest)
+    ]
   end
 
   # tls handshake
-  def decode(<<20, 3, 3, 0, 1, 1, 22, _major::8, _minor::8, length::16, _rest::binary>> = _message) do
-    [%PgSiphon.Message{
-      payload: "Cannot process TLS messages",
-      type: "tls_handshake",
-      length: length + 9
-    }]
+  def decode(
+        <<20, 3, 3, 0, 1, 1, 22, _major::8, _minor::8, length::16, _rest::binary>> = _message
+      ) do
+    [
+      %PgSiphon.Message{
+        payload: "Cannot process TLS messages",
+        type: "tls_handshake",
+        length: length + 9
+      }
+    ]
   end
 
   # tls change cypher suite
-  def decode(<<22, _major::8, _minor::8, length::16, msg_type::8, _rest::binary>> = _message) do
-    [%PgSiphon.Message{
-      payload: "Cannot process TLS messages",
-      type: "tls_change_cypher",
-      length: length + 5
-    }]
+  def decode(<<22, _major::8, _minor::8, length::16, _msg_type::8, _rest::binary>> = _message) do
+    [
+      %PgSiphon.Message{
+        payload: "Cannot process TLS messages",
+        type: "tls_change_cypher",
+        length: length + 5
+      }
+    ]
   end
 
   # tls message data
-  def decode(<<23, length::integer-size(32), rest::binary>> = message) do
-    <<message::binary-size(length - 4), rest::binary>> = rest
-    [%PgSiphon.Message{payload: "Cannot process TLS messages", type: "tls_message_data", length: length}]
+  def decode(<<23, length::integer-size(32), _rest::binary>> = _message) do
+    [
+      %PgSiphon.Message{
+        payload: "Cannot process TLS messages",
+        type: "tls_message_data",
+        length: length
+      }
+    ]
   end
 
   def decode(<<66, length::integer-size(32), rest::binary>>) when length - 4 <= byte_size(rest) do
