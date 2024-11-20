@@ -1,56 +1,38 @@
 # PgSiphon
 
-🚧 Under development, not fully functional yet (see current features) 🚧
+🚧 Under development, not fully functional yet 🚧
 
 PgSiphon is an (experimental) simple proxy utility that sits between your application and your Postgres server to provide activity metrics on all queries executed. 
 
 This is useful for debugging, performance tuning, or auditing purposes, and should only be used in development modes.
 
-As it also has the ability to record all activity, it can be used to generate datasets for database intrusion detection machine learning algorithms.
-
-Simply configure your application to the proxy, perform and record normal usage, and repeat the same whilst performing a series of attacks. Records are able to be exported in CSV, and you can label each dataset as either 'normal' or 'attack' (0 or 1), and include the type of attack.
-
-## Why? Can't I just use Postgres logs?
-
-Sometimes, with modern ORMs and query builders, it can be difficult to see the actual queries that are being executed against your database. This can make it difficult to debug, tune, or audit your application's database activity.
-
-Yes, you can just use Postgres logs. However, sometimes they do not tell the full story, and by sitting between the two servers, we can get a very accurate indiction of what is going on (including host/client behaviour).
-
-### Current features:
-
-1. Proxy server - complete
-2. Recording infrastructure - complete
-3. File export - complete
-4. Management interface - in progress
-5. Performance tuning - in progress
-6. Dockerfile - to be completed.
-
+As it also has the ability to record all activity, it can be used to generate datasets.
 
 ## Performance
 
-The proxy server can handle an extremely high number of requests per second. The bottleneck is currently the web logging infrastructure, specifically the web sockets to the management UI. This is being worked on, and is a problem with web sockets themselves, not the proxy server. Logging hundreds of queries per second over pub sub to a DOM is not a good idea, but its a fun problem to solve. If you are sending less than a hundred frames per second, you should be relatively fine.  Note that it will likely not crash, but it will slow down, and if this happens, the proxy server **will remain fully operational**.
+The proxy server can handle a high number of requests per second. The current bottleneck is the web logging infrastructure, particularly the web sockets to the management UI. The proxy server will remain operational even if the UI slows/shuts down.
 
-In headless mode, logging to a file can handle hundreds of queries per second.
+In headless mode, file logging can handle hundreds of queries per second efficiently.
 
 ## Usage
 
 You will need to configure your application to use the proxy server.
 
-Unless otherwise changed, the proxy server will listen on `localhost:1337` and forward all queries to `localhost:5432`.
+By default, the proxy server will listen on `localhost:1337` and forward all data to `localhost:5432`.
 
-Note: You **must** edit postgresql.conf to disable SSL (ssl=off) for now as it is not supported.
+Note: You **must** edit `postgresql.conf` to disable SSL (`ssl=off`) as it is not supported currently.
 
-You probably also want to edit pg_hba.conf to trust.
+You may also want to edit `pg_hba.conf` to set the authentication method to `trust`.
 
 To start the proxy server, run:
 
 ```bash
 mix compile
 
-# this will run interactively, so you can change recording modes on the fly, perform file export etc.
-iex -S mix 
+# This will run interactively, allowing you to change recording modes on the fly, perform file exports, etc.
+iex -S mix
 
-# if you don't want to run interactively
+# If you don't want to run interactively
 mix run --no-halt
 ```
 
@@ -64,6 +46,12 @@ config :pg_siphon, :proxy_server,
   to_host: ~c"localhost",
   to_port: 5432
 ```
+
+## Why? Can't I just use Postgres logs?
+
+Sometimes, with modern ORMs and query builders, it can be difficult to see the actual queries that are being executed against your database. This can make it difficult to debug, tune, or audit your application's database activity.
+
+Yes, you can just use Postgres logs. However, sometimes they do not tell the full story, and by sitting between the two servers, we can get a very accurate indiction of what is going on (including host/client behaviour).
 
 ## Management
 
