@@ -21,9 +21,7 @@ defmodule PgSiphon.Message do
     "c" => "Copy completion",
     "f" => "Copy failure",
     "X" => "Termination",
-    "ssl" => "SSL request",
-    "tls_handshake" => "TLS handshake",
-    "0" => nil
+    "0" => "Misc."
   }
 
   # There is a tonne of duplication in decode/1, payloads are different,
@@ -36,7 +34,7 @@ defmodule PgSiphon.Message do
     [
       %PgSiphon.Message{
         payload: <<4, 210, 22, 47>>,
-        type: "ssl",
+        type: "0",
         length: 8
       }
       | decode(rest)
@@ -50,7 +48,7 @@ defmodule PgSiphon.Message do
     [
       %PgSiphon.Message{
         payload: "Cannot process TLS messages",
-        type: "tls_handshake",
+        type: "0",
         length: length + 9
       }
     ]
@@ -61,7 +59,7 @@ defmodule PgSiphon.Message do
     [
       %PgSiphon.Message{
         payload: "Cannot process TLS messages",
-        type: "tls_change_cypher",
+        type: "0",
         length: length + 5
       }
     ]
@@ -72,7 +70,7 @@ defmodule PgSiphon.Message do
     [
       %PgSiphon.Message{
         payload: "Cannot process TLS messages",
-        type: "tls_message_data",
+        type: "0",
         length: length
       }
     ]
