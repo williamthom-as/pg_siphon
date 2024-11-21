@@ -22,10 +22,6 @@ defmodule PgSiphon.Broadcaster do
 
   def new_message_frame(messages) do
     Phoenix.PubSub.broadcast(@pubsub_name, @pubsub_topic, {:new_message_frame, messages})
-
-    # This is to make the flow in log_message_frame work,
-    # fix it. It's dumb to be this tightly coupled.
-    messages.payload
   end
 
   def message_types_changed(message_types) do
