@@ -10,7 +10,7 @@ defmodule PgSiphon.BatchNotificationServer do
   defmodule State do
     defstruct messages: [],
               batch_size: 100,
-              timeout_ms: 500
+              timeout_ms: 1000
   end
 
   # Client API
@@ -50,20 +50,28 @@ defmodule PgSiphon.BatchNotificationServer do
 
   def handle_cast(:process_batch, %State{messages: messages} = state)
       when length(messages) >= state.batch_size do
+    Logger.debug("Processing batch, #{length(messages)} messages")
+
     Broadcaster.new_message_frame(Enum.reverse(messages))
     {:noreply, %State{state | messages: []}}
   end
 
   def handle_cast(:process_batch, state) do
+    Logger.debug("Processing batch, not enough messages")
+
     {:noreply, state}
   end
 
   def handle_cast(:force_batch, %State{messages: messages} = state) when length(messages) > 0 do
+    Logger.debug("Forcing batch, #{length(messages)} messages")
+
     Broadcaster.new_message_frame(Enum.reverse(messages))
     {:noreply, %State{state | messages: []}}
   end
 
   def handle_cast(:force_batch, state) do
+    Logger.debug("Forcing batch, no messages")
+
     {:noreply, state}
   end
 
