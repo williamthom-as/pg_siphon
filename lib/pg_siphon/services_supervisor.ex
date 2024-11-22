@@ -10,7 +10,8 @@ defmodule PgSiphon.ServicesSupervisor do
       PgSiphon.QueryServer,
       PgSiphon.MonitoringServer,
       PgSiphon.ProxyServer,
-      PgSiphon.ActiveConnectionsServer
+      PgSiphon.ActiveConnectionsServer,
+      PgSiphon.BatchNotificationServer
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

@@ -166,18 +166,20 @@ defmodule PgSiphon.Message do
   end
 
   def log_message_frame(message_frame) do
-    # This is awful, fix this up.
-    message_frame
-    |> Enum.each(fn %PgSiphon.Message{payload: payload, type: type, length: _length} ->
-      payload
-      |> :binary.bin_to_list()
-      # Strip out null bytes
-      |> Enum.filter(&(&1 != 0))
-      |> List.to_string()
-      |> (&%{payload: &1, type: type, time: :os.system_time(:millisecond)}).()
-      |> PgSiphon.Broadcaster.new_message_frame()
-      |> (&("Type: " <> type <> " Message: " <> &1)).()
-      |> Logger.debug()
+    Enum.each(message_frame, fn %PgSiphon.Message{payload: payload, type: type} ->
+      message = payload
+        |> :binary.bin_to_list()
+        |> Enum.reject(&(&1 == 0))
+        |> List.to_string()
+
+      notification = %{
+        payload: message,
+        type: type,
+        time: :os.system_time(:millisecond)
+      }
+
+      PgSiphon.BatchNotificationServer.send_message(notification)
+      Logger.debug("Type: #{type} Message: #{message}")
     end)
   end
 end

@@ -14,7 +14,7 @@ defmodule PgSiphon.ActiveConnectionsServer do
   # Client interface
 
   def start_link(_args) do
-    Logger.info("Starting ActiveConnectionServer...")
+    Logger.info("Starting ActiveConnection Server...")
 
     GenServer.start_link(__MODULE__, :ok, name: @name)
   end

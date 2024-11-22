@@ -58,7 +58,7 @@ defmodule PgSiphon.MessageTest do
   test "parse/1 with nil message" do
     message_frame = <<0, 0, 0, 8, 4, 210, 22, 47>>
 
-    assert [%PgSiphon.Message{payload: <<4, 210, 22, 47>>, type: "ssl", length: 8}] =
+    assert [%PgSiphon.Message{payload: <<4, 210, 22, 47>>, type: "0", length: 8}] =
              PgSiphon.Message.decode(message_frame)
   end
 
@@ -123,7 +123,7 @@ defmodule PgSiphon.MessageTest do
     assert [
              %PgSiphon.Message{
                payload: "Cannot process TLS messages",
-               type: "tls_change_cypher",
+               type: "0",
                length: 328
              }
            ] = PgSiphon.Message.decode(message_frame)
