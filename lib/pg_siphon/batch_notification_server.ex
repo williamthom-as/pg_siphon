@@ -70,7 +70,7 @@ defmodule PgSiphon.BatchNotificationServer do
   end
 
   def handle_cast(:force_batch, state) do
-    Logger.debug("Forcing batch, no messages")
+    # Logger.debug("Forcing batch, no messages")
 
     {:noreply, state}
   end
