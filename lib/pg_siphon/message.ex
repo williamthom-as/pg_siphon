@@ -1,7 +1,7 @@
 require Logger
 
 defmodule PgSiphon.Message do
-  defstruct [:payload, :type, :length]
+  defstruct payload: "", type: "", length: 0, extras: %{}
 
   # Postgres instructions
   # https://www.postgresql.org/docs/current/protocol-message-formats.html
@@ -77,10 +77,25 @@ defmodule PgSiphon.Message do
   end
 
   def decode(<<66, length::integer-size(32), rest::binary>>) when length - 4 <= byte_size(rest) do
-    # Logger.debug(inspect(rest, bin: :as_binaries, limit: :infinity))
-
     <<message::binary-size(length - 4), rest::binary>> = rest
-    [%PgSiphon.Message{payload: message, type: "B", length: length} | decode(rest)]
+
+    extras =
+      try do
+        # We offload due to complexity.
+        PgSiphon.Message.BindParser.parse(message)
+        |> Map.from_struct()
+      rescue
+        e ->
+          Logger.error("Failed to parse bind message: #{inspect(e)}")
+
+          # Return empty map if we fail, who cares
+          %{}
+      end
+
+    [
+      %PgSiphon.Message{payload: message, type: "B", length: length, extras: extras}
+      | decode(rest)
+    ]
   end
 
   def decode(<<67, length::integer-size(32), rest::binary>>) when length - 4 <= byte_size(rest) do
@@ -112,7 +127,21 @@ defmodule PgSiphon.Message do
 
   def decode(<<80, length::integer-size(32), rest::binary>>) when length - 4 <= byte_size(rest) do
     <<message::binary-size(length - 4), rest::binary>> = rest
-    [%PgSiphon.Message{payload: message, type: "P", length: length} | decode(rest)]
+
+    # split message on first null byte into prepared statement and content
+    {prepared_statement, content} = bin_split(message)
+
+    [
+      %PgSiphon.Message{
+        payload: content,
+        type: "P",
+        length: length,
+        extras: %{
+          prepared_statement: prepared_statement
+        }
+      }
+      | decode(rest)
+    ]
   end
 
   def decode(<<81, length::integer-size(32), rest::binary>>) when length - 4 <= byte_size(rest) do
@@ -166,8 +195,9 @@ defmodule PgSiphon.Message do
   end
 
   def log_message_frame(message_frame) do
-    Enum.each(message_frame, fn %PgSiphon.Message{payload: payload, type: type} ->
-      message = payload
+    Enum.each(message_frame, fn %PgSiphon.Message{payload: payload, type: type, extras: extras} ->
+      message =
+        payload
         |> :binary.bin_to_list()
         |> Enum.reject(&(&1 == 0))
         |> List.to_string()
@@ -175,11 +205,24 @@ defmodule PgSiphon.Message do
       notification = %{
         payload: message,
         type: type,
+        extras: extras,
         time: :os.system_time(:millisecond)
       }
 
       PgSiphon.BatchNotificationServer.send_message(notification)
       Logger.debug("Type: #{type} Message: #{message}")
     end)
+  end
+
+  def bin_split(binary, split_on \\ <<0>>) do
+    case :binary.match(binary, split_on) do
+      {index, 1} ->
+        <<first::binary-size(index), 0, rest::binary>> = binary
+
+        {first, rest}
+
+      :nomatch ->
+        {binary, <<>>}
+    end
   end
 end

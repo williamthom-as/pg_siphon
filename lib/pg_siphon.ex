@@ -9,7 +9,8 @@ defmodule PgSiphon do
     Logger.info("Starting application supervision tree ...")
 
     children = [
-      {Phoenix.PubSub, name: :broadcaster},
+      Supervisor.child_spec({Phoenix.PubSub, name: :broadcaster}, id: :broadcaster),
+      Supervisor.child_spec({Phoenix.PubSub, name: :recording_notifier}, id: :recording_notifier),
       PgSiphon.ServicesSupervisor
     ]
 
