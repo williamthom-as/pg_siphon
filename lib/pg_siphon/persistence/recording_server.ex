@@ -3,6 +3,7 @@ defmodule PgSiphon.Persistence.RecordingServer do
 
   require Logger
 
+  alias PgSiphon.Persistence.Notifier
   alias Phoenix.PubSub
 
   @name :recording_server
@@ -36,7 +37,7 @@ defmodule PgSiphon.Persistence.RecordingServer do
 
   def init(state) do
     root_dir =
-      Application.get_env(:pg_siphon_management, :export)
+      Application.get_env(:pg_siphon, :export)
       |> Keyword.get(:export_dir)
 
     {:ok, %{state | root_dir: root_dir}}
@@ -105,10 +106,9 @@ defmodule PgSiphon.Persistence.RecordingServer do
   end
 
   defp notify_external(status, file_name) do
-    PubSub.broadcast(
-      PgSiphonManagement.PubSub,
-      "recording",
-      {status, %{file_name: file_name}}
-    )
+    Phoenix.PubSub.broadcast(:recording_notifier, "recording", {
+      status,
+      %{file_name: file_name}
+    })
   end
 end
