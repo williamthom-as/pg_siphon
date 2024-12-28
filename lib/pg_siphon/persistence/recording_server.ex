@@ -3,7 +3,6 @@ defmodule PgSiphon.Persistence.RecordingServer do
 
   require Logger
 
-  alias PgSiphon.Persistence.Notifier
   alias Phoenix.PubSub
 
   @name :recording_server
@@ -81,7 +80,13 @@ defmodule PgSiphon.Persistence.RecordingServer do
     messages
     |> Enum.each(fn %{type: type, payload: payload, time: time, extras: extras} ->
       escaped_payload = String.replace(payload, "\n", "")
-      extras_json = extras |> Jason.encode!()
+
+      extras_json =
+        if is_map(extras) or is_list(extras) do
+          Jason.encode!(extras)
+        else
+          ""
+        end
 
       csv_row =
         [[type, escaped_payload, time, extras_json]]
