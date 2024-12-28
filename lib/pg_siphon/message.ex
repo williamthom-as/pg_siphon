@@ -131,6 +131,14 @@ defmodule PgSiphon.Message do
     # split message on first null byte into prepared statement and content
     {prepared_statement, content} = bin_split(message)
 
+    prepared_statement =
+      case prepared_statement do
+        "" -> []
+        _ -> :binary.bin_to_list(prepared_statement)
+      end
+
+
+
     [
       %PgSiphon.Message{
         payload: content,

@@ -79,11 +79,12 @@ defmodule PgSiphon.Persistence.RecordingServer do
   def handle_info({:new_message_frame, messages}, %{recording: true} = state)
       when is_list(messages) do
     messages
-    |> Enum.each(fn %{type: type, payload: payload, time: time} ->
+    |> Enum.each(fn %{type: type, payload: payload, time: time, extras: extras} ->
       escaped_payload = String.replace(payload, "\n", "")
+      extras_json = extras |> Jason.encode!()
 
       csv_row =
-        [[type, escaped_payload, time]]
+        [[type, escaped_payload, time, extras_json]]
         |> CSV.encode()
         |> Enum.join()
 

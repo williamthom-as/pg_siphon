@@ -24,7 +24,8 @@ defmodule PgSiphon.MixProject do
     [
       {:postgrex, ">= 0.18.0"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:csv, "~> 3.2"}
+      {:csv, "~> 3.2"},
+      {:jason, "~> 1.4"}
     ]
   end
 end
