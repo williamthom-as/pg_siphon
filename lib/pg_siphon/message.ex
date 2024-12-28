@@ -137,8 +137,6 @@ defmodule PgSiphon.Message do
         _ -> :binary.bin_to_list(prepared_statement)
       end
 
-
-
     [
       %PgSiphon.Message{
         payload: content,

@@ -81,6 +81,9 @@ defmodule PgSiphon.Persistence.RecordingServer do
     |> Enum.each(fn %{type: type, payload: payload, time: time, extras: extras} ->
       escaped_payload = String.replace(payload, "\n", "")
 
+      IO.puts "here freshed"
+      IO.inspect extras
+
       extras_json =
         if is_map(extras) or is_list(extras) do
           Jason.encode!(extras)
