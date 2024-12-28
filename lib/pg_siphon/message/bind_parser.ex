@@ -61,10 +61,10 @@ defmodule PgSiphon.Message.BindParser do
   defp get_params(bin, 0, acc), do: {Enum.reverse(acc), bin}
 
   defp get_params(
-         <<length::integer-32, value::binary-size(length), rest::binary>>,
-         count,
-         acc
-       ) do
-    get_params(rest, count - 1, [{length, value} | acc])
+        <<length::integer-32, value::binary-size(length), rest::binary>>,
+        count,
+        acc
+      ) do
+    get_params(rest, count - 1, [[length, value] | acc])
   end
 end
