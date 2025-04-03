@@ -18,13 +18,13 @@ defmodule PgSiphon.Persistence.RecordingServerTest do
     PubSub.broadcast(
       @pubsub_name,
       @pubsub_topic,
-      {:new_message_frame, [%{type: "a", payload: "a", time: "1234"}]}
+      {:new_message_frame, [%{type: "a", payload: "a", time: "1234", extras: %{}}]}
     )
 
     PubSub.broadcast(
       @pubsub_name,
       @pubsub_topic,
-      {:new_message_frame, [%{type: "b", payload: "b", time: "5678"}]}
+      {:new_message_frame, [%{type: "b", payload: "b", time: "5678", extras: %{}}]}
     )
 
     # wait for a bit
@@ -34,8 +34,10 @@ defmodule PgSiphon.Persistence.RecordingServerTest do
     assert {:error, :not_started} == RecordingServer.stop()
 
     {:ok, content} = File.read("test.log" <> ".raw.csv")
-    assert content =~ "a,a,1234\r\nb,b,5678\r\n"
+
+    assert content =~ "a,a,1234,{}\r\nb,b,5678,{}\r\n"
 
     File.rm(@file_path)
+    File.rm("test.log" <> ".raw.csv")
   end
 end
