@@ -5,7 +5,6 @@ defmodule PgSiphon.ProxyServer do
 
   @name :proxy_server
 
-  alias PgSiphon.QueryServer
   alias PgSiphon.MonitoringServer
   alias PgSiphon.ActiveConnectionsServer
 
@@ -209,7 +208,8 @@ defmodule PgSiphon.ProxyServer do
   end
 
   defp dispatch_full_frames(decoded_messages) do
-    spawn(fn -> QueryServer.add_message(decoded_messages) end)
+    # Do we still need this?
+    # spawn(fn -> QueryServer.add_message(decoded_messages) end)
     spawn(fn -> MonitoringServer.log_message(decoded_messages) end)
   end
 end
