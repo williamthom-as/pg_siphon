@@ -1,12 +1,12 @@
 # PgSiphon
 
-🚧 Under development, not fully functional yet 🚧
-
 PgSiphon is an (experimental) simple proxy utility that sits between your application and your Postgres server to provide activity metrics on all queries executed. 
 
 This is useful for debugging, performance tuning, or auditing purposes, and should only be used in development modes.
 
-As it also has the ability to record all activity, it can be used to generate datasets.
+As it also has the ability to record all activity and export to a CSV.
+
+**This project is just the proxy server, for easier install and use, the web app management project is now available [here](http://wwww.github.com/williamthom-as/pg_siphon_management).**
 
 ## Performance
 
