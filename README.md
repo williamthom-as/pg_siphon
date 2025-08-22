@@ -6,7 +6,7 @@ This is useful for debugging, performance tuning, or auditing purposes, and shou
 
 As it also has the ability to record all activity and export to a CSV.
 
-**This project is just the proxy server, for easier install and use, the web app management project is now available [here](http://wwww.github.com/williamthom-as/pg_siphon_management).**
+**This project is just the proxy server, for easier install and use, the web app management project is now available [here](http://www.github.com/williamthom-as/pg_siphon_management).**
 
 ## Performance
 
@@ -57,7 +57,7 @@ Yes, you can just use Postgres logs. However, sometimes they do not tell the ful
 
 This project contains the code for the proxy server and recording infrastructure. There is a seperate project (`PgSiphonManagement`) that provides a web interface for managing the proxy server, including file export and visualisations.
 
-You can find that project [here](http://wwww.github.com/williamthom-as/pg_siphon_management).
+You can find that project [here](http://www.github.com/williamthom-as/pg_siphon_management).
 
 ### Incorporating library
 
